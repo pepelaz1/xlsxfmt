@@ -2,7 +2,7 @@ format:
   name: Standard Medsurg
   description: Standard formatting for medsurg reports.
   version: 1.0.0
-  logo-path: file:///c:/temp/logo.png
+  logo-path: c://references/logo.png
   output-filename-base: FINAL Inventory Reports
 
 defaults:

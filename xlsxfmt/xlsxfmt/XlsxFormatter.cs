@@ -311,6 +311,21 @@ namespace xlsxfmt
         }
         #endregion Helper methods
 
+        private Stream loadLogo(String logoPath)
+        {
+            Stream logoStream = null;
+            try
+            {
+                Uri uri = new Uri(logoPath);
+                logoStream = new FileStream(uri.AbsolutePath, FileMode.Open);
+            }
+            catch (Exception ex)
+            {
+
+            }
+            return logoStream;
+        }
+
         public void Process()
         {
             // Read input parameters
@@ -330,15 +345,22 @@ namespace xlsxfmt
             
             // Initialize aggregation functions
             InitAggregateFunctions();
+            
+            // Get logo sheets
+            List<String> logoSheets = GetLogoSheets();
+
+            Stream logoStream = loadLogo(_yaml.Format.LogoPath);
+
+            bool needLogoUsage = (logoSheets.Count > 0) && (logoStream != null);
 
             // Construct output workbook using source workbook and input params
-            Construct(sourceWorkbook, outputWorkbook);
+            Construct(sourceWorkbook, outputWorkbook, needLogoUsage);
 
             // Save output file
             outputWorkbook.SaveAs(_outputXlsx);
 
-            List<String> logoSheets = GetLogoSheets();
-            if (logoSheets.Count > 0)
+
+            if (needLogoUsage)
             {
                 using (SpreadsheetDocument document = SpreadsheetDocument.Open(_outputXlsx, true))
                 {
@@ -363,8 +385,8 @@ namespace xlsxfmt
                         }
 
                         //insert Image by specifying two range
-                        Uri uri = new Uri(_yaml.Format.LogoPath);
-                        InsertImage(sheet1, 0, 0, 1, numberOfColumns, new FileStream(uri.AbsolutePath, FileMode.Open));
+                        
+                        InsertImage(sheet1, 0, 0, 1, numberOfColumns, logoStream);
 
                     }
                     document.WorkbookPart.Workbook.Save();
@@ -398,21 +420,21 @@ namespace xlsxfmt
             }
         }
 
-        private void Construct(XLWorkbook wsrc, XLWorkbook wout)
+        private void Construct(XLWorkbook wsrc, XLWorkbook wout, bool needLogoUsage)
         {
             // Construct sheets
             foreach (var shtFmt in _yaml.Sheet)
             {
-               // if (shtFmt.Name.IndexOf("Location") >= 0)
-              //  {
+                if (shtFmt.Name.IndexOf("Location") >= 0)
+                {
                     var source = shtFmt.Name;
                     if (!string.IsNullOrEmpty(shtFmt.Source))
                         source = shtFmt.Source;
 
                     // Find source sheet in source workbook
                     var ssht = wsrc.Worksheets.Where(x => x.Name == source).FirstOrDefault();
-                    ConstructSheet(ssht, wout, shtFmt);
-               // }
+                    ConstructSheet(ssht, wout, shtFmt, needLogoUsage);
+                }
             }
         }
 
@@ -811,13 +833,13 @@ namespace xlsxfmt
             return 0;
         }
 
-        private void ConstructSheet(IXLWorksheet ssht, XLWorkbook wout, xlsxfmt.format.Sheet shtFmt)
+        private void ConstructSheet(IXLWorksheet ssht, XLWorkbook wout, xlsxfmt.format.Sheet shtFmt, bool needLogoUsage)
         {
             IXLWorksheet wsht = wout.AddWorksheet(shtFmt.Name);
             int logoRows = 0;
             int headerRows = 1;
             int startRowNum = 1;
-            if (!String.IsNullOrEmpty(shtFmt.IncludeLogo) && shtFmt.IncludeLogo.Equals("true"))
+            if (needLogoUsage && !String.IsNullOrEmpty(shtFmt.IncludeLogo) && shtFmt.IncludeLogo.Equals("true"))
             {
                 wsht.Row(1).Height = 140;//!!!
                 logoRows = 2;
