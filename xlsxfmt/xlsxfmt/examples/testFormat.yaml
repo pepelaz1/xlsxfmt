@@ -1,0 +1,304 @@
+format:
+  name: Standard Medsurg
+  description: Standard formatting for medsurg reports.
+  version: 1.0.0
+  logo-path: file:///c:/temp/logo.png
+  output-filename-base: FINAL Inventory Reports
+
+defaults:
+  sheet:
+    freeze-on-cell: A2
+    header-row-bgcolor: aaaaaa
+    grand-total-row-bgcolor: ddbb88
+  column:
+    decimal-places: 2
+  font:
+    family: Calibri
+    size: 11
+    header:
+      style: bold
+    footer:
+      style: bold
+
+sheet:
+  - name: Your BIG50 Items
+    source: big50
+    sort:
+      - column: TtlCost
+        direction: descending
+    column:
+      - name: COUNT
+        format-type: NUMBER
+        decimal-places: 0
+        conditional-formatting:
+          type: databar
+          style: gradient-orange
+      - name: TtlCost
+        format-type: ACCOUNTING
+        conditional-formatting:
+          type: databar
+          style: gradient-red
+      - name: MMIS Number
+        source: sku
+        format-type: TEXT
+        width: 10
+      - name: SupplierName
+        source: mfg
+        width: 20
+      - name: CatalogNumber
+        source: ref
+        format-type: TEXT
+        width: 15
+      - name: Description
+        width: 50
+      - name: PurchCost
+        format-type: ACCOUNTING
+      - name: PurchMultiple
+        format-type: NUMBER
+        decimal-places: 0
+      - name: UnitCost
+        format-type: ACCOUNTING
+        decimal-places: 4
+      - name: SRC
+      - name: BIGInstanceId
+  - name: Location Detail
+    source: locDetail
+    include-logo: true
+    freeze-on-cell: D2
+    sort:
+      - column: Building
+      - column: Room
+      - column: Location
+      - column: BLID
+      - column: SupplierName
+      - column: CatalogNumber
+    column:
+      - name: Building
+        subtotal:
+          group: true
+          total-row-bgcolor: 77ddbb
+        font:
+          data:
+            size: 8
+      - name: Room
+        subtotal:
+          group: true
+          total-row-bgcolor: aacccc
+        font:
+          data:
+            size: 8
+      - name: Location
+        subtotal:
+          group: true
+          total-row-bgcolor: 99eecc
+        font:
+          data:
+            size: 8
+      - name: BLID
+      - name: MMIS Number
+        source: sku
+        format-type: TEXT
+        width: 10
+      - name: SupplierName
+        source: mfg
+        width: 20
+      - name: CatalogNumber
+        source: ref
+        format-type: TEXT
+        width: 15
+      - name: Description
+        width: 50
+      - name: PurchCost
+        format-type: ACCOUNTING
+      - name: PurchMultiple
+        format-type: NUMBER
+        decimal-places: 0
+      - name: UnitCost
+        format-type: ACCOUNTING
+        decimal-places: 4
+      - name: COUNT
+        format-type: NUMBER
+        decimal-places: 0
+      - name: TtlCost
+        format-type: ACCOUNTING
+        subtotal:
+          function: 9
+      - name: SRC
+      - name: BIGInstanceId
+  - name: Item Summary (all items)
+    source: itemSumm
+    sort:
+      - column: SupplierName
+      - column: CatalogNumber
+    column:
+      - name: MMIS Number
+        source: sku
+        format-type: TEXT
+        width: 10
+      - name: SupplierName
+        source: mfg
+        width: 20
+      - name: CatalogNumber
+        source: ref
+        format-type: TEXT
+        width: 15
+      - name: Description
+        width: 50
+      - name: PurchCost
+        format-type: ACCOUNTING
+      - name: PurchMultiple
+        format-type: NUMBER
+        decimal-places: 0
+      - name: UnitCost
+        format-type: ACCOUNTING
+        decimal-places: 4
+      - name: COUNT
+        format-type: NUMBER
+        decimal-places: 0
+      - name: TtlCost
+        format-type: ACCOUNTING
+      - name: SRC
+      - name: BIGInstanceId
+  - name: Item Summary (hi-lo)
+    source: itemSumm
+    freeze-on-cell: C2
+    sort:
+      - column: TtlCost
+        direction: descending
+    column:
+      - name: MMIS Number
+        source: sku
+        format-type: TEXT
+        width: 10
+      - name: SupplierName
+        source: mfg
+        width: 20
+      - name: CatalogNumber
+        source: ref
+        format-type: TEXT
+        width: 15
+      - name: Description
+        width: 50
+      - name: PurchCost
+        format-type: ACCOUNTING
+      - name: PurchMultiple
+        format-type: NUMBER
+        decimal-places: 0
+      - name: UnitCost
+        format-type: ACCOUNTING
+        decimal-places: 4
+      - name: COUNT
+        format-type: NUMBER
+        decimal-places: 0
+      - name: TtlCost
+        format-type: ACCOUNTING
+      - name: SRC
+      - name: BIGInstanceId
+  - name: Item Summary (by Supplier)
+    source: itemSumm
+    freeze-on-cell: C2
+    sort:
+      - column: SupplierName
+      - column: CatalogNumber
+    column:
+      - name: MMIS Number
+        source: sku
+        format-type: TEXT
+        width: 10
+      - name: SupplierName
+        source: mfg
+        width: 20
+        subtotal:
+          group: true
+          total-row-bgcolor: aacccc
+      - name: CatalogNumber
+        source: ref
+        format-type: TEXT
+        width: 15
+      - name: Description
+        width: 50
+      - name: PurchCost
+        format-type: ACCOUNTING
+      - name: PurchMultiple
+        format-type: NUMBER
+        decimal-places: 0
+      - name: UnitCost
+        format-type: ACCOUNTING
+        decimal-places: 4
+      - name: COUNT
+        format-type: NUMBER
+        decimal-places: 0
+      - name: TtlCost
+        format-type: ACCOUNTING
+        subtotal:
+          function: 9
+      - name: SRC
+      - name: BIGInstanceId
+  - name: Unpriced UDI Items
+    source: udi
+    sort:
+      - column: SupplierName
+      - column: CatalogNumber
+    column:
+      - name: MMIS Number
+        source: sku
+        format-type: TEXT
+        width: 10
+      - name: SupplierName
+        source: mfg
+        width: 20
+      - name: CatalogNumber
+        source: ref
+        format-type: TEXT
+        width: 15
+      - name: Description
+        width: 50
+      - name: PurchCost
+        format-type: ACCOUNTING
+      - name: PurchMultiple
+        format-type: NUMBER
+        decimal-places: 0
+      - name: UnitCost
+        format-type: ACCOUNTING
+        decimal-places: 4
+      - name: COUNT
+        format-type: NUMBER
+        decimal-places: 0
+      - name: TtlCost
+        format-type: ACCOUNTING
+      - name: SRC
+      - name: BIGInstanceId
+  - name: BIG Priced Items
+    source: big
+    sort:
+      - column: SupplierName
+      - column: CatalogNumber
+    column:
+      - name: MMIS Number
+        source: sku
+        format-type: TEXT
+        width: 10
+      - name: SupplierName
+        source: mfg
+        width: 20
+      - name: CatalogNumber
+        source: ref
+        format-type: TEXT
+        width: 15
+      - name: Description
+        width: 50
+      - name: PurchCost
+        format-type: ACCOUNTING
+      - name: PurchMultiple
+        format-type: NUMBER
+        decimal-places: 0
+      - name: UnitCost
+        format-type: ACCOUNTING
+        decimal-places: 4
+      - name: COUNT
+        format-type: NUMBER
+        decimal-places: 0
+      - name: TtlCost
+        format-type: ACCOUNTING
+      - name: SRC
+      - name: BIGInstanceId
