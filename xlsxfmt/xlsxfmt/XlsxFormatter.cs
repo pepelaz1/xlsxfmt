@@ -425,8 +425,8 @@ namespace xlsxfmt
             // Construct sheets
             foreach (var shtFmt in _yaml.Sheet)
             {
-                if (shtFmt.Name.IndexOf("Location") >= 0)
-                {
+              //  if (shtFmt.Name.IndexOf("Location") >= 0)
+              //  {
                     var source = shtFmt.Name;
                     if (!string.IsNullOrEmpty(shtFmt.Source))
                         source = shtFmt.Source;
@@ -434,7 +434,7 @@ namespace xlsxfmt
                     // Find source sheet in source workbook
                     var ssht = wsrc.Worksheets.Where(x => x.Name == source).FirstOrDefault();
                     ConstructSheet(ssht, wout, shtFmt, needLogoUsage);
-                }
+              //  }
             }
         }
 
