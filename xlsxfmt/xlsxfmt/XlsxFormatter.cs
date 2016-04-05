@@ -432,7 +432,7 @@ namespace xlsxfmt
             // Construct sheets
             foreach (var shtFmt in _yaml.Sheet)
             {
-                //if (shtFmt.Name.IndexOf("Location") >= 0)
+                //if (shtFmt.Name.IndexOf("Supplier") >= 0)
                 //{
                     var source = shtFmt.Name;
                     if (!string.IsNullOrEmpty(shtFmt.Source))
@@ -544,7 +544,7 @@ namespace xlsxfmt
                                     )
                     )
             {
-                if (!prevRow.Cell(colNum).Value.Equals(curRow.Cell(colNum).Value))
+                if (!prevRow.Cell(colNum).Value.ToString().ToUpper().Equals(curRow.Cell(colNum).Value.ToString().ToUpper()))
                 {
                     break;
                 }
