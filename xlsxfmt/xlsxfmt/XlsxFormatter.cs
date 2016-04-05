@@ -433,7 +433,7 @@ namespace xlsxfmt
             foreach (var shtFmt in _yaml.Sheet)
             {
                 //if (shtFmt.Name.IndexOf("Location") >= 0)
-               // {
+                //{
                     var source = shtFmt.Name;
                     if (!string.IsNullOrEmpty(shtFmt.Source))
                         source = shtFmt.Source;
@@ -441,7 +441,7 @@ namespace xlsxfmt
                     // Find source sheet in source workbook
                     var ssht = wsrc.Worksheets.Where(x => x.Name == source).FirstOrDefault();
                     ConstructSheet(ssht, wout, shtFmt, needLogoUsage);
-              //  }
+                //}
             }
         }
 
@@ -911,21 +911,21 @@ namespace xlsxfmt
                 wsht.Row(rowNum).Style.Fill.SetBackgroundColor(XLColor.FromArgb(headerR, headerG, headerB));
             }
             #endregion
-            #region Grand total row bg color
-            String grandTotalColorStr;
-            if (!string.IsNullOrEmpty(shtFmt.GrandTotalRowBgcolor))
-                grandTotalColorStr = shtFmt.GrandTotalRowBgcolor;
-            else
-                grandTotalColorStr = _yaml.Defaults.Sheet.GrandTotalRowBgcolor;
-            if (!String.IsNullOrEmpty(grandTotalColorStr))
-            {
-                int headerR = int.Parse(grandTotalColorStr.Substring(0, 2), System.Globalization.NumberStyles.HexNumber);
-                int headerG = int.Parse(grandTotalColorStr.Substring(2, 2), System.Globalization.NumberStyles.HexNumber);
-                int headerB = int.Parse(grandTotalColorStr.Substring(4, 2), System.Globalization.NumberStyles.HexNumber);
-                int grandRowNum = 10;
-                wsht.Row(grandRowNum).Style.Fill.SetBackgroundColor(XLColor.FromArgb(headerR, headerG, headerB));
-            }
-            #endregion
+            //#region Grand total row bg color
+            //String grandTotalColorStr;
+            //if (!string.IsNullOrEmpty(shtFmt.GrandTotalRowBgcolor))
+            //    grandTotalColorStr = shtFmt.GrandTotalRowBgcolor;
+            //else
+            //    grandTotalColorStr = _yaml.Defaults.Sheet.GrandTotalRowBgcolor;
+            //if (!String.IsNullOrEmpty(grandTotalColorStr))
+            //{
+            //    int headerR = int.Parse(grandTotalColorStr.Substring(0, 2), System.Globalization.NumberStyles.HexNumber);
+            //    int headerG = int.Parse(grandTotalColorStr.Substring(2, 2), System.Globalization.NumberStyles.HexNumber);
+            //    int headerB = int.Parse(grandTotalColorStr.Substring(4, 2), System.Globalization.NumberStyles.HexNumber);
+            //    int grandRowNum = 10;
+            //    wsht.Row(grandRowNum).Style.Fill.SetBackgroundColor(XLColor.FromArgb(headerR, headerG, headerB));
+            //}
+            //#endregion
             #region Hidden
             if (Convert.ToBoolean(shtFmt.Hidden))
                 wsht.Hide();
