@@ -10,6 +10,7 @@ defaults:
     freeze-on-cell: A2
     header-row-bgcolor: aaaaaa
     grand-total-row-bgcolor: ddbb88
+    totals-calculation-mode: formula
   column:
     decimal-places: 2
   font:
@@ -123,6 +124,7 @@ sheet:
         format-type: ACCOUNTING
         subtotal:
           function: 9
+          calculation-mode: formula
       - name: SRC
       - name: BIGInstanceId
   - name: Item Summary (all items)

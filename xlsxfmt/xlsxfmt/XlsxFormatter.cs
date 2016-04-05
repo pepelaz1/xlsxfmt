@@ -30,6 +30,8 @@ namespace xlsxfmt
         private Dictionary<string, string> _options = new Dictionary<string, string>();
         private Dictionary<int, string> _aggregateFunctions = new Dictionary<int, string>();
         private string _delimiter = "~";
+        private string _calcModeInternal = "internal";
+        private string _calcModeFormula = "formula";
         private YamlFile _yaml;
 
         public XlsxFormatter(string[] args)
@@ -59,7 +61,7 @@ namespace xlsxfmt
                 }
             }
         }
-        
+
         private List<String> GetLogoSheets()
         {
             List<String> sheets = new List<string>();
@@ -342,10 +344,10 @@ namespace xlsxfmt
 
             // Create empty output workbook
             var outputWorkbook = new XLWorkbook();
-            
+
             // Initialize aggregation functions
             InitAggregateFunctions();
-            
+
             // Get logo sheets
             List<String> logoSheets = GetLogoSheets();
 
@@ -385,15 +387,20 @@ namespace xlsxfmt
                         }
 
                         //insert Image by specifying two range
-                        
-                        InsertImage(sheet1, 0, 0, 1, numberOfColumns, logoStream);
 
+                        InsertImage(sheet1, 0, 0, 1, numberOfColumns, logoStream);
+                        //!!!panes
+                        /*var panes = sheet1.Worksheet.Descendants<Pane>();
+                        foreach (var item in panes)
+                        {
+                            item.TopLeftCell = "L9";
+                        }*/
                     }
                     document.WorkbookPart.Workbook.Save();
                     // Close the document handle.
                     document.Close();
                 }
-              //   validateXlsx(_outputXlsx);
+                //   validateXlsx(_outputXlsx);
             }
         }
 
@@ -425,8 +432,8 @@ namespace xlsxfmt
             // Construct sheets
             foreach (var shtFmt in _yaml.Sheet)
             {
-              //  if (shtFmt.Name.IndexOf("Location") >= 0)
-              //  {
+                //if (shtFmt.Name.IndexOf("Location") >= 0)
+               // {
                     var source = shtFmt.Name;
                     if (!string.IsNullOrEmpty(shtFmt.Source))
                         source = shtFmt.Source;
@@ -831,6 +838,35 @@ namespace xlsxfmt
             }
 
             return 0;
+        }
+
+        private String GetCalcMode(int columnNumber, xlsxfmt.format.Sheet sheet)
+        {
+            String calcMode = _calcModeInternal;
+            try
+            {
+                xlsxfmt.format.Column c = sheet.Column[columnNumber - 1];
+                if (String.IsNullOrEmpty(c.calculationMode))
+                {
+                    if (String.IsNullOrEmpty(_yaml.Defaults.Sheet.TotalsCalculationMode))
+                    {
+                        calcMode = _calcModeInternal;
+                    }
+                    else
+                    {
+                        calcMode = _yaml.Defaults.Sheet.TotalsCalculationMode;
+                    }
+                }
+                else
+                {
+                    calcMode = c.calculationMode;
+                }
+            }
+            catch (Exception ex)
+            {
+                calcMode = _calcModeInternal;
+            }
+            return calcMode;
         }
 
         private void ConstructSheet(IXLWorksheet ssht, XLWorkbook wout, xlsxfmt.format.Sheet shtFmt, bool needLogoUsage)
@@ -1271,6 +1307,28 @@ namespace xlsxfmt
                         wsht.Row(curRowNumber).Clear();
                         curRow.Cell(groupColumn).Value = prevValue;
                         SetTotalRowStyle(totalLevel, curRow, lc, colFuncs, shtFmt);
+
+                        //writing totals for every function
+                        foreach (var colFunc in (from f in colFuncs orderby f.Key select f))
+                        {
+                            int rL = Convert.ToInt32((double)totalLevel);
+                            //Double tempResult = evaluateTemp(wshtTemp, rL + 1, aggregateFunctions[colFunc.Value]);
+                            String calcMode = GetCalcMode(colFunc.Key, shtFmt);
+                            if (calcMode == _calcModeInternal)
+                            {
+                                Double tempResult = GetGroupResult(elements[colFunc.Key][rL + 1], colFunc.Value);//.Sum();
+                                curRow.Cell(colFunc.Key).Value = tempResult;
+                            }
+                            else if (calcMode == _calcModeFormula)
+                            {
+                                String range = "";
+                                RowsRange row = groupRanges[totalLevel + 1].Last();
+                                range = "R[" + (row.startRow - curRowNumber) + "]C" + ":" + "R[" + (row.endRow - curRowNumber) + "]C";
+                                curRow.Cell(colFunc.Key).FormulaR1C1 = "=SUBTOTAL(" + colFunc.Value + "," + range + ")";
+                            }
+                            elements[colFunc.Key][rL + 1].Clear();
+                        }
+
                         groupRanges[totalLevel + 1].Add(new RowsRange(curRowNumber + 1, curRowNumber));
                         for (int i = 0; i < groupLevel + 1; i++)
                         {
@@ -1282,15 +1340,6 @@ namespace xlsxfmt
                                 groupRanges[i].Last().startRow++;
                             }
 
-                        }
-                        //writing totals for every function
-                        foreach (var colFunc in (from f in colFuncs orderby f.Key select f))
-                        {
-                            int rL = Convert.ToInt32((double)totalLevel);
-                            //Double tempResult = evaluateTemp(wshtTemp, rL + 1, aggregateFunctions[colFunc.Value]);
-                            Double tempResult = GetGroupResult(elements[colFunc.Key][rL + 1], colFunc.Value);//.Sum();
-                            elements[colFunc.Key][rL + 1].Clear();
-                            curRow.Cell(colFunc.Key).Value = tempResult;
                         }
                     }
                     //}
@@ -1314,8 +1363,19 @@ namespace xlsxfmt
                 SetGrandTotalRowStyle(0, wsht.LastRowUsed(), lc, colFuncs, shtFmt);
                 foreach (var colFunc in (from f in colFuncs orderby f.Key select f))
                 {
-                    Double grandTotal = GetGroupResult(elements[colFunc.Key][0], colFunc.Value);//.Sum();
-                    wsht.Cell(grandTotalRowNumber, colFunc.Key).Value = grandTotal;
+                    String calcMode = GetCalcMode(colFunc.Key, shtFmt);
+                    if (calcMode == _calcModeInternal)
+                    {
+                        Double grandTotal = GetGroupResult(elements[colFunc.Key][0], colFunc.Value);//.Sum();
+                        wsht.Cell(grandTotalRowNumber, colFunc.Key).Value = grandTotal;
+                    }
+                    else if (calcMode == _calcModeFormula)
+                    {
+                        String range = "";
+                        RowsRange row = groupRanges[0].Last();
+                        range = "R[" + (row.startRow - grandTotalRowNumber) + "]C" + ":" + "R[" + (row.endRow - grandTotalRowNumber) + "]C";
+                        curRow.Cell(colFunc.Key).FormulaR1C1 = "=SUBTOTAL(" + colFunc.Value + "," + range + ")";
+                    }
                 }
                 //Clear column, used for sorting
                 wsht.Column(sortColNumber).Clear();

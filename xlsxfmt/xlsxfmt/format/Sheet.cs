@@ -23,5 +23,7 @@ namespace xlsxfmt.format
         public string IncludeLogo { get; set; }
         public List<Column> Column { get; set; }
         public Font Font { get; set; }
+        [YamlMember(Alias = "totals-calculation-mode")]
+        public string TotalsCalculationMode { get; set; }
     }
 }

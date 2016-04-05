@@ -23,5 +23,8 @@ namespace xlsxfmt.format
         [YamlMember(Alias = "conditional-formatting")]
         public ConditionalFormatting conditionalFormatting { get; set; }
         public Subtotal Subtotal { get; set; }
+        [YamlMember(Alias = "calculation-mode")]
+        public String calculationMode { get; set; }
+
     }
 }
