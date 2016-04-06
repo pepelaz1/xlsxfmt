@@ -432,7 +432,7 @@ namespace xlsxfmt
             // Construct sheets
             foreach (var shtFmt in _yaml.Sheet)
             {
-                //if (shtFmt.Name.IndexOf("Supplier") >= 0)
+               // if (shtFmt.Name.IndexOf("Location") >= 0)
                 //{
                     var source = shtFmt.Name;
                     if (!string.IsNullOrEmpty(shtFmt.Source))
@@ -441,7 +441,7 @@ namespace xlsxfmt
                     // Find source sheet in source workbook
                     var ssht = wsrc.Worksheets.Where(x => x.Name == source).FirstOrDefault();
                     ConstructSheet(ssht, wout, shtFmt, needLogoUsage);
-                //}
+               // }
             }
         }
 
@@ -1080,17 +1080,9 @@ namespace xlsxfmt
                 rowNum = startRowNum;
             }
 
-            // Adjust columns width
-            wsht.Columns().AdjustToContents();
             colNum = 1;
             foreach (xlsxfmt.format.Column colFmt in shtFmt.Column)
             {
-                #region width
-                double w = 0;
-                double.TryParse(colFmt.Width, out w);
-                if (w != 0)
-                    wsht.Column(colNum).Width = w;
-                #endregion
                 #region column format
                 if (string.IsNullOrEmpty(colFmt.FormatType))
                     colFmt.FormatType = "GENERAL";
@@ -1380,6 +1372,19 @@ namespace xlsxfmt
                 //Clear column, used for sorting
                 wsht.Column(sortColNumber).Clear();
                 //wshtTemp.Delete();
+            }
+            // Adjust columns width
+            wsht.Columns().AdjustToContents();
+            colNum = 1;
+            foreach (xlsxfmt.format.Column colFmt in shtFmt.Column)
+            {
+                #region width
+                double w = 0;
+                double.TryParse(colFmt.Width, out w);
+                if (w != 0)
+                    wsht.Column(colNum).Width = w;
+                #endregion
+                colNum++;
             }
         }
 
