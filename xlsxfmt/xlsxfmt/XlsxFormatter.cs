@@ -55,7 +55,7 @@ namespace xlsxfmt
                     }
                     else
                     {
-                        foreach (Match m in Regex.Matches(args[i], @"(\w+(?:-\w+)+)=(\w+)"))
+                        foreach (Match m in Regex.Matches(args[i], @"(\w+(?:-\w+)+)=(\""?)(\w+)(\""?)"))
                             _options.Add(m.Groups[1].Value, m.Groups[2].Value);
                     }
                 }
@@ -1350,7 +1350,10 @@ namespace xlsxfmt
                 }
                 //constructing grandtotal
                 int grandTotalRowNumber = tableSortRange.LastRowUsed().RowNumber() + 1;
-                wsht.Cell(grandTotalRowNumber, wsht.FirstColumnUsed().ColumnNumber()).Value = "Grand total";
+                String prefix = "";
+                if (_options.ContainsKey(@"grand-total-prefix"))
+                    prefix = prefix + _options[@"grand-total-prefix"] + " ";
+                wsht.Cell(grandTotalRowNumber, wsht.FirstColumnUsed().ColumnNumber()).Value = prefix + "Grand total";
 
                 SetGrandTotalRowStyle(0, wsht.LastRowUsed(), lc, colFuncs, shtFmt);
                 foreach (var colFunc in (from f in colFuncs orderby f.Key select f))
