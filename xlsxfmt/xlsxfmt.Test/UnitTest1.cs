@@ -10,11 +10,11 @@ namespace xlsxfmt.Test
         public void TestMethod1()
         {
             var xf = new XlsxFormatter( new string[] {
-                @"examples\test input.xlsx",
+                @"examples\test input1.xlsx",
                 @"examples\testFormat.yaml",
                 @"--output-filename-prefix=_outpref_",
                 @"--output-filename-postfix=_outpost_",
-                @"--grand-total-prefix=_grandpref_",
+                @"--grand-total-prefix=""General Medical System""",
                 @"examples\overriden output.xlsx",
             });
 

@@ -32,6 +32,7 @@ namespace xlsxfmt
         private string _delimiter = "~";
         private string _calcModeInternal = "internal";
         private string _calcModeFormula = "formula";
+        public static Image _logo;
         private YamlFile _yaml;
 
         public XlsxFormatter(string[] args)
@@ -55,7 +56,7 @@ namespace xlsxfmt
                     }
                     else
                     {
-                        foreach (Match m in Regex.Matches(args[i], @"(\w+(?:-\w+)+)=(\""?)(\w+)(\""?)"))
+                        foreach (Match m in Regex.Matches(args[i], @"(\w+(?:-\w+)+)=(?:\""?)([0-9a-zA-Z_ ]+)(?:\""?)"))
                             _options.Add(m.Groups[1].Value, m.Groups[2].Value);
                     }
                 }
@@ -108,7 +109,7 @@ namespace xlsxfmt
             }
             //Adding the drawings.xml part
             DrawingsPart drawingsPart1 = sheet1.AddNewPart<DrawingsPart>("rId" + drawingPartId.ToString());
-            GenerateDrawingsPart1Content(drawingsPart1, startRowIndex, startColumnIndex, endRowIndex, endColumnIndex);
+            GenerateDrawingsPart1Content(drawingsPart1);
             //Adding the image
             ImagePart imagePart1 = drawingsPart1.AddNewPart<ImagePart>("image/jpeg", "rId1");
             imagePart1.FeedData(imageStream);
@@ -172,112 +173,80 @@ namespace xlsxfmt
         }
 
         // Generates content of drawingsPart1.
-        private static void GenerateDrawingsPart1Content(DrawingsPart drawingsPart1, int startRowIndex, int startColumnIndex, int endRowIndex, int endColumnIndex)
+        public static void GenerateDrawingsPart1Content(DrawingsPart drawingsPart1)
         {
             Xdr.WorksheetDrawing worksheetDrawing1 = new Xdr.WorksheetDrawing();
             worksheetDrawing1.AddNamespaceDeclaration("xdr", "http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing");
             worksheetDrawing1.AddNamespaceDeclaration("a", "http://schemas.openxmlformats.org/drawingml/2006/main");
 
-            Xdr.TwoCellAnchor twoCellAnchor1 = new Xdr.TwoCellAnchor() { EditAs = Xdr.EditAsValues.OneCell };
 
-            Xdr.FromMarker fromMarker1 = new Xdr.FromMarker();
-            Xdr.ColumnId columnId1 = new Xdr.ColumnId();
-            columnId1.Text = startColumnIndex.ToString();
-            Xdr.ColumnOffset columnOffset1 = new Xdr.ColumnOffset();
-            columnOffset1.Text = "38100";
-            Xdr.RowId rowId1 = new Xdr.RowId();
-            rowId1.Text = startRowIndex.ToString();
-            Xdr.RowOffset rowOffset1 = new Xdr.RowOffset();
-            rowOffset1.Text = "0";
+            Xdr.NonVisualDrawingProperties nvdp = new Xdr.NonVisualDrawingProperties() { Id = (UInt32Value)2U, Name = "Picture 1" };
+            DocumentFormat.OpenXml.Drawing.PictureLocks picLocks = new DocumentFormat.OpenXml.Drawing.PictureLocks();
+            picLocks.NoChangeAspect = true;
+            picLocks.NoChangeArrowheads = true;
+            Xdr.NonVisualPictureDrawingProperties nvpdp = new Xdr.NonVisualPictureDrawingProperties();
+            nvpdp.PictureLocks = picLocks;
+            Xdr.NonVisualPictureProperties nvpp = new Xdr.NonVisualPictureProperties();
+            nvpp.NonVisualDrawingProperties = nvdp;
+            nvpp.NonVisualPictureDrawingProperties = nvpdp;
 
-            fromMarker1.Append(columnId1);
-            fromMarker1.Append(columnOffset1);
-            fromMarker1.Append(rowId1);
-            fromMarker1.Append(rowOffset1);
+            DocumentFormat.OpenXml.Drawing.Stretch stretch = new DocumentFormat.OpenXml.Drawing.Stretch();
+            stretch.FillRectangle = new DocumentFormat.OpenXml.Drawing.FillRectangle();
 
-            Xdr.ToMarker toMarker1 = new Xdr.ToMarker();
-            Xdr.ColumnId columnId2 = new Xdr.ColumnId();
-            columnId2.Text = endColumnIndex.ToString();
-            Xdr.ColumnOffset columnOffset2 = new Xdr.ColumnOffset();
-            columnOffset2.Text = "542925";
-            Xdr.RowId rowId2 = new Xdr.RowId();
-            rowId2.Text = endRowIndex.ToString();
-            Xdr.RowOffset rowOffset2 = new Xdr.RowOffset();
-            rowOffset2.Text = "161925";
+            Xdr.BlipFill blipFill = new Xdr.BlipFill();
+            A.Blip blip = new A.Blip();
+            blip.Embed = "rId1";
+            blip.CompressionState = A.BlipCompressionValues.Print;
+            blipFill.Blip = blip;
+            blipFill.SourceRectangle = new DocumentFormat.OpenXml.Drawing.SourceRectangle();
+            blipFill.Append(stretch);
 
-            toMarker1.Append(columnId2);
-            toMarker1.Append(columnOffset2);
-            toMarker1.Append(rowId2);
-            toMarker1.Append(rowOffset2);
+            DocumentFormat.OpenXml.Drawing.Transform2D t2d = new DocumentFormat.OpenXml.Drawing.Transform2D();
+            DocumentFormat.OpenXml.Drawing.Offset offset = new DocumentFormat.OpenXml.Drawing.Offset();
+            offset.X = 0;
+            offset.Y = 0;
+            t2d.Offset = offset;
 
-            Xdr.Picture picture1 = new Xdr.Picture();
+            A.Extents extents = new A.Extents();
 
-            Xdr.NonVisualPictureProperties nonVisualPictureProperties1 = new Xdr.NonVisualPictureProperties();
-            Xdr.NonVisualDrawingProperties nonVisualDrawingProperties1 = new Xdr.NonVisualDrawingProperties() { Id = (UInt32Value)2U, Name = "Picture 1" };
+            //if (width == null)
+                extents.Cx = (long)_logo.Width * (long)((float)914400 / _logo.HorizontalResolution);
+            //else
+             //   extents.Cx = width;
 
-            Xdr.NonVisualPictureDrawingProperties nonVisualPictureDrawingProperties1 = new Xdr.NonVisualPictureDrawingProperties();
-            A.PictureLocks pictureLocks1 = new A.PictureLocks() { NoChangeAspect = true };
+          //  if (height == null)
+                extents.Cy = (long)_logo.Height * (long)((float)914400 / _logo.VerticalResolution);
+           // else
+            //    extents.Cy = height;
 
-            nonVisualPictureDrawingProperties1.Append(pictureLocks1);
+           // bm.Dispose();
+            t2d.Extents = extents;
+            Xdr.ShapeProperties sp = new Xdr.ShapeProperties();
+            sp.BlackWhiteMode = DocumentFormat.OpenXml.Drawing.BlackWhiteModeValues.Auto;
+            sp.Transform2D = t2d;
+            DocumentFormat.OpenXml.Drawing.PresetGeometry prstGeom = new DocumentFormat.OpenXml.Drawing.PresetGeometry();
+            prstGeom.Preset = DocumentFormat.OpenXml.Drawing.ShapeTypeValues.Rectangle;
+            prstGeom.AdjustValueList = new DocumentFormat.OpenXml.Drawing.AdjustValueList();
+            sp.Append(prstGeom);
+            sp.Append(new DocumentFormat.OpenXml.Drawing.NoFill());
 
-            nonVisualPictureProperties1.Append(nonVisualDrawingProperties1);
-            nonVisualPictureProperties1.Append(nonVisualPictureDrawingProperties1);
+            DocumentFormat.OpenXml.Drawing.Spreadsheet.Picture picture = new DocumentFormat.OpenXml.Drawing.Spreadsheet.Picture();
+            picture.NonVisualPictureProperties = nvpp;
+            picture.BlipFill = blipFill;
+            picture.ShapeProperties = sp;
 
-            Xdr.BlipFill blipFill1 = new Xdr.BlipFill();
-
-            A.Blip blip1 = new A.Blip() { Embed = "rId1", CompressionState = A.BlipCompressionValues.Print };
-            blip1.AddNamespaceDeclaration("r", "http://schemas.openxmlformats.org/officeDocument/2006/relationships");
-
-            A.BlipExtensionList blipExtensionList1 = new A.BlipExtensionList();
-
-            A.BlipExtension blipExtension1 = new A.BlipExtension() { Uri = "{28A0092B-C50C-407E-A947-70E740481C1C}" };
-
-            A14.UseLocalDpi useLocalDpi1 = new A14.UseLocalDpi() { Val = false };
-            useLocalDpi1.AddNamespaceDeclaration("a14", "http://schemas.microsoft.com/office/drawing/2010/main");
-
-            blipExtension1.Append(useLocalDpi1);
-
-            blipExtensionList1.Append(blipExtension1);
-
-            blip1.Append(blipExtensionList1);
-
-            A.Stretch stretch1 = new A.Stretch();
-            A.FillRectangle fillRectangle1 = new A.FillRectangle();
-
-            stretch1.Append(fillRectangle1);
-
-            blipFill1.Append(blip1);
-            blipFill1.Append(stretch1);
-
-            Xdr.ShapeProperties shapeProperties1 = new Xdr.ShapeProperties();
-
-            A.Transform2D transform2D1 = new A.Transform2D();
-            A.Offset offset1 = new A.Offset() { X = 1257300L, Y = 762000L };
-            A.Extents extents1 = new A.Extents() { Cx = 2943225L, Cy = 2257425L };
-
-            transform2D1.Append(offset1);
-            transform2D1.Append(extents1);
-
-            A.PresetGeometry presetGeometry1 = new A.PresetGeometry() { Preset = A.ShapeTypeValues.Rectangle };
-            A.AdjustValueList adjustValueList1 = new A.AdjustValueList();
-
-            presetGeometry1.Append(adjustValueList1);
-
-            shapeProperties1.Append(transform2D1);
-            shapeProperties1.Append(presetGeometry1);
-
-            picture1.Append(nonVisualPictureProperties1);
-            picture1.Append(blipFill1);
-            picture1.Append(shapeProperties1);
-            Xdr.ClientData clientData1 = new Xdr.ClientData();
-
-            twoCellAnchor1.Append(fromMarker1);
-            twoCellAnchor1.Append(toMarker1);
-            twoCellAnchor1.Append(picture1);
-            twoCellAnchor1.Append(clientData1);
-
-            worksheetDrawing1.Append(twoCellAnchor1);
-
+            DocumentFormat.OpenXml.Drawing.Spreadsheet.Position pos = new DocumentFormat.OpenXml.Drawing.Spreadsheet.Position();
+            pos.X = 0;
+            pos.Y = 0;
+            DocumentFormat.OpenXml.Drawing.Spreadsheet.Extent ext = new DocumentFormat.OpenXml.Drawing.Spreadsheet.Extent();
+            ext.Cx = extents.Cx;
+            ext.Cy = extents.Cy;
+            DocumentFormat.OpenXml.Drawing.Spreadsheet.AbsoluteAnchor anchor = new DocumentFormat.OpenXml.Drawing.Spreadsheet.AbsoluteAnchor();
+            anchor.Position = pos;
+            anchor.Extent = ext;
+            anchor.Append(picture);
+            anchor.Append(new DocumentFormat.OpenXml.Drawing.Spreadsheet.ClientData());
+            worksheetDrawing1.Append(anchor);
             drawingsPart1.WorksheetDrawing = worksheetDrawing1;
         }
 
@@ -320,6 +289,8 @@ namespace xlsxfmt
             {
                 Uri uri = new Uri(logoPath);
                 logoStream = new FileStream(uri.AbsolutePath, FileMode.Open);
+                _logo = Image.FromStream(logoStream);
+                logoStream.Seek(0, SeekOrigin.Begin);
             }
             catch (Exception ex)
             {
@@ -432,8 +403,8 @@ namespace xlsxfmt
             // Construct sheets
             foreach (var shtFmt in _yaml.Sheet)
             {
-               // if (shtFmt.Name.IndexOf("Location") >= 0)
-                //{
+                //if (shtFmt.Name.IndexOf("Location") >= 0)
+              //  {
                     var source = shtFmt.Name;
                     if (!string.IsNullOrEmpty(shtFmt.Source))
                         source = shtFmt.Source;
@@ -877,8 +848,10 @@ namespace xlsxfmt
             int startRowNum = 1;
             if (needLogoUsage && !String.IsNullOrEmpty(shtFmt.IncludeLogo) && shtFmt.IncludeLogo.Equals("true"))
             {
-                wsht.Row(1).Height = 140;//!!!
-                logoRows = 2;
+                Graphics g = Graphics.FromImage(_logo);
+                wsht.Row(1).Height = (int)(_logo.Height * 72 / g.DpiY) + 1;//!!!
+                g.Dispose();
+                logoRows = 1;
             }
             else
             {
@@ -1026,7 +999,7 @@ namespace xlsxfmt
                 rowNum++;
                 // Populate output column cells
                 var cellCnt = srcColumn.Cells().Count();
-                for (int i = 2; i < cellCnt; i++)
+                for (int i = 2; i <= cellCnt; i++)
                 {
                     wsht.Cell(rowNum, colNum).Value = srcColumn.Cell(i).Value;
                     #region setdatacellstyle
