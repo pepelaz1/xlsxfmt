@@ -51,11 +51,13 @@ namespace xlsxfmt
                 {
                     if (args[i].StartsWith("--") == false)
                     {
+                        //Console.WriteLine("Parsing options: " + args[i]);
                         _outputXlsx = args[i];
-                        break;
+                        //break;
                     }
                     else
                     {
+                        //Console.WriteLine("Parsing options: " + args[i]);
                         foreach (Match m in Regex.Matches(args[i], @"(\w+(?:-\w+)+)=(?:\""?)([0-9a-zA-Z_ ]+)(?:\""?)"))
                             _options.Add(m.Groups[1].Value, m.Groups[2].Value);
                     }
@@ -404,7 +406,7 @@ namespace xlsxfmt
             foreach (var shtFmt in _yaml.Sheet)
             {
                 //if (shtFmt.Name.IndexOf("Location") >= 0)
-              //  {
+                //{
                     var source = shtFmt.Name;
                     if (!string.IsNullOrEmpty(shtFmt.Source))
                         source = shtFmt.Source;
@@ -412,7 +414,7 @@ namespace xlsxfmt
                     // Find source sheet in source workbook
                     var ssht = wsrc.Worksheets.Where(x => x.Name == source).FirstOrDefault();
                     ConstructSheet(ssht, wout, shtFmt, needLogoUsage);
-               // }
+                //}
             }
         }
 
@@ -846,12 +848,14 @@ namespace xlsxfmt
             int logoRows = 0;
             int headerRows = 1;
             int startRowNum = 1;
+            bool logoInserted = false;
             if (needLogoUsage && !String.IsNullOrEmpty(shtFmt.IncludeLogo) && shtFmt.IncludeLogo.Equals("true"))
             {
                 Graphics g = Graphics.FromImage(_logo);
                 wsht.Row(1).Height = (int)(_logo.Height * 72 / g.DpiY) + 1;//!!!
                 g.Dispose();
                 logoRows = 1;
+                logoInserted = true;
             }
             else
             {
@@ -882,6 +886,10 @@ namespace xlsxfmt
                 int headerG = int.Parse(headerColorStr.Substring(2, 2), System.Globalization.NumberStyles.HexNumber);
                 int headerB = int.Parse(headerColorStr.Substring(4, 2), System.Globalization.NumberStyles.HexNumber);
                 wsht.Row(rowNum).Style.Fill.SetBackgroundColor(XLColor.FromArgb(headerR, headerG, headerB));
+                if (logoInserted)
+                {
+                    wsht.Row(rowNum - 1).Style.Fill.SetBackgroundColor(XLColor.FromArgb(headerR, headerG, headerB));
+                }
             }
             #endregion
             //#region Grand total row bg color
