@@ -37,6 +37,10 @@ namespace xlsxfmt
             catch(Exception ex)
             {
                 Console.WriteLine(ex.Message);
+                if (ex is ArgumentException)
+                {
+                    printUsage();
+                }
             }
         }
 

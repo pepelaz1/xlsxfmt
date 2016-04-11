@@ -27,6 +27,7 @@ namespace xlsxfmt
         private string _sourceXlsx;
         private string _formatYaml;
         private string _outputXlsx;
+        private List<String> optionKeys = new List<string>( new string[] {"output-filename-prefix", "output-filename-postfix", "grand-total-prefix"});
         private Dictionary<string, string> _options = new Dictionary<string, string>();
         private Dictionary<int, string> _aggregateFunctions = new Dictionary<int, string>();
         private string _delimiter = "~";
@@ -35,9 +36,30 @@ namespace xlsxfmt
         public static Image _logo;
         private YamlFile _yaml;
 
+        public void ValidateArguments()
+        {
+            if (String.IsNullOrEmpty(_sourceXlsx) || String.IsNullOrWhiteSpace(_sourceXlsx)){
+                throw new System.ArgumentException("Source filename should not be empty or null or whitespaces");
+            }
+            if (String.IsNullOrEmpty(_formatYaml) || String.IsNullOrWhiteSpace(_formatYaml))
+            {
+                throw new System.ArgumentException("Format filename should not be empty or null or whitespaces");
+            }
+
+            foreach (var item in _options)
+            {
+                if (!optionKeys.Contains(item.Key))
+                {
+                    throw new System.ArgumentException("Illegal argument option \"" + item.Key + "\" specified. Please, check usage note.");
+                }
+            }
+
+        }
+
         public XlsxFormatter(string[] args)
         {
             ParseArguments(args);
+            ValidateArguments();
         }
 
         private void ParseArguments(string[] args)
@@ -59,7 +81,10 @@ namespace xlsxfmt
                     {
                         //Console.WriteLine("Parsing options: " + args[i]);
                         foreach (Match m in Regex.Matches(args[i], @"(\w+(?:-\w+)+)=(?:\""?)([0-9a-zA-Z_ ]+)(?:\""?)"))
+                        {
                             _options.Add(m.Groups[1].Value, m.Groups[2].Value);
+                        }
+                            
                     }
                 }
             }
@@ -405,7 +430,7 @@ namespace xlsxfmt
             // Construct sheets
             foreach (var shtFmt in _yaml.Sheet)
             {
-                //if (shtFmt.Name.IndexOf("Location") >= 0)
+                //if (shtFmt.Name.IndexOf("Supplier") >= 0)
                 //{
                     var source = shtFmt.Name;
                     if (!string.IsNullOrEmpty(shtFmt.Source))
@@ -600,42 +625,34 @@ namespace xlsxfmt
                 row.Style.Fill.SetBackgroundColor(XLColor.FromArgb(headerR, headerG, headerB));
             }
             xlsxfmt.format.Font cellFont;
-            if (c.Font != null && c.Font.Data != null)
-                cellFont = c.Font;
-            else
+            if (sheet.Font != null && sheet.Font.Footer != null)
                 cellFont = sheet.Font;
-            if (cellFont != null && cellFont.Data != null)
+            else
+                cellFont = _yaml.Defaults.Font;
+            if (cellFont != null && cellFont.Footer != null)
             {
                 //size
-                if (!String.IsNullOrEmpty(cellFont.Data.Size))
+                if (!String.IsNullOrEmpty(cellFont.Size))
                 {
                     double fontSz;
-                    Double.TryParse(cellFont.Data.Size, out fontSz);
-                    row.Cell(totalLevel + 1).Style.Font.SetFontSize(fontSz);
+                    Double.TryParse(cellFont.Size, out fontSz);
+                    row.Style.Font.SetFontSize(fontSz);
                 }
                 //style
-                String dataStyle;
-                if (!string.IsNullOrEmpty(cellFont.Data.Style))
-                {
-                    dataStyle = cellFont.Data.Style;
-                }
-                else
-                {
-                    dataStyle = _yaml.Defaults.Font.Footer.Style;
-                }
+                String dataStyle = cellFont.Footer.Style;
                 if (!String.IsNullOrEmpty(dataStyle))
                 {
                     if (dataStyle == "bold")
                     {
-                        row.Cell(totalLevel + 1).Style.Font.SetBold();
+                        row.Style.Font.SetBold();
                     }
                     else if (dataStyle == "italic")
                     {
-                        row.Cell(totalLevel + 1).Style.Font.SetItalic();
+                        row.Style.Font.SetItalic();
                     }
                     else if (dataStyle == "underline")
                     {
-                        row.Cell(totalLevel + 1).Style.Font.SetUnderline();
+                        row.Style.Font.SetUnderline();
                     }
                 }
                 //conditional-formatting
@@ -671,42 +688,34 @@ namespace xlsxfmt
                 row.Style.Fill.SetBackgroundColor(XLColor.FromArgb(headerR, headerG, headerB));
             }
             xlsxfmt.format.Font cellFont;
-            if (c.Font != null && c.Font.Data != null)
-                cellFont = c.Font;
-            else
+             if (sheet.Font != null && sheet.Font.Footer != null)
                 cellFont = sheet.Font;
-            if (cellFont != null && cellFont.Data != null)
+            else
+                cellFont = _yaml.Defaults.Font;
+            if (cellFont != null && cellFont.Footer != null)
             {
                 //size
-                if (!String.IsNullOrEmpty(cellFont.Data.Size))
+                if (!String.IsNullOrEmpty(cellFont.Size))
                 {
                     double fontSz;
-                    Double.TryParse(cellFont.Data.Size, out fontSz);
-                    row.Cell(totalLevel + 1).Style.Font.SetFontSize(fontSz);
+                    Double.TryParse(cellFont.Size, out fontSz);
+                    row.Style.Font.SetFontSize(fontSz);
                 }
                 //style
-                String dataStyle;
-                if (!string.IsNullOrEmpty(cellFont.Data.Style))
-                {
-                    dataStyle = cellFont.Data.Style;
-                }
-                else
-                {
-                    dataStyle = _yaml.Defaults.Font.Footer.Style;
-                }
+                String dataStyle = cellFont.Footer.Style;
                 if (!String.IsNullOrEmpty(dataStyle))
                 {
                     if (dataStyle == "bold")
                     {
-                        row.Cell(totalLevel + 1).Style.Font.SetBold();
+                        row.Style.Font.SetBold();
                     }
                     else if (dataStyle == "italic")
                     {
-                        row.Cell(totalLevel + 1).Style.Font.SetItalic();
+                        row.Style.Font.SetItalic();
                     }
                     else if (dataStyle == "underline")
                     {
-                        row.Cell(totalLevel + 1).Style.Font.SetUnderline();
+                        row.Style.Font.SetUnderline();
                     }
                 }
                 //conditional-formatting
