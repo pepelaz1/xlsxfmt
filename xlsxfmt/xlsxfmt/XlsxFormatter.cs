@@ -101,6 +101,28 @@ namespace xlsxfmt
             return sheets;
         }
 
+        private Dictionary<String, int> GetMoveTotalSheets()
+        {
+            Dictionary<String, int> sheets = new Dictionary<String, int>();
+            foreach (var sheet in _yaml.Sheet)
+            {
+                Dictionary<int,int> colFuncs = GetColFuncs(sheet);
+                String freezeCell;
+                if (!string.IsNullOrEmpty(sheet.FreezeOnCell))
+                    freezeCell = sheet.FreezeOnCell;
+                else
+                    freezeCell = _yaml.Defaults.Sheet.FreezeOnCell;
+                int freezeCol = GetFreezeCol(freezeCell);
+                // Mapping (Name of sheet, minimum number of totalling columns
+                if (colFuncs.Count>0){
+                    int colNum = colFuncs.Keys.Min();
+                    if (colNum > freezeCol)
+                        sheets.Add(sheet.Name, colNum);
+                }
+            }
+            return sheets;
+        }
+
         /// <summary>
         /// Inserts the image at the specified location 
         /// </summary>
@@ -353,6 +375,10 @@ namespace xlsxfmt
 
             bool needLogoUsage = (logoSheets.Count > 0) && (logoStream != null);
 
+            Dictionary<String, int> moveTotalSheets = GetMoveTotalSheets();
+
+            bool needMoveTotalColumn = moveTotalSheets.Count > 0;
+
             // Construct output workbook using source workbook and input params
             Construct(sourceWorkbook, outputWorkbook, needLogoUsage);
 
@@ -360,39 +386,49 @@ namespace xlsxfmt
             outputWorkbook.SaveAs(_outputXlsx);
 
 
-            if (needLogoUsage)
+            if (needLogoUsage || needMoveTotalColumn)
             {
                 using (SpreadsheetDocument document = SpreadsheetDocument.Open(_outputXlsx, true))
                 {
                     WorkbookPart workbookpart = document.WorkbookPart;
                     //WorksheetPart sheet1 = workbookpart.WorksheetParts.First();
-                    foreach (var customSheet in logoSheets)
+                    if (needLogoUsage)
                     {
-                        WorksheetPart sheet1 = GetSheetByName(workbookpart, customSheet);
-
-                        Row row = sheet1.Worksheet.GetFirstChild<SheetData>().Elements<Row>().FirstOrDefault();
-                        var numberOfColumns = 0;
-                        if (row != null)
+                        foreach (var customSheet in logoSheets)
                         {
-                            var spans = row.Spans != null ? row.Spans.InnerText : "";
-                            if (spans != String.Empty)
+                            WorksheetPart sheet1 = GetSheetByName(workbookpart, customSheet);
+
+                            Row row = sheet1.Worksheet.GetFirstChild<SheetData>().Elements<Row>().FirstOrDefault();
+                            var numberOfColumns = 0;
+                            if (row != null)
                             {
-                                char[] delimiter = new char[1];
-                                delimiter[0] = ':';
-                                string[] columns = spans.Split(delimiter);
-                                numberOfColumns = int.Parse(columns[1]);
+                                var spans = row.Spans != null ? row.Spans.InnerText : "";
+                                if (spans != String.Empty)
+                                {
+                                    char[] delimiter = new char[1];
+                                    delimiter[0] = ':';
+                                    string[] columns = spans.Split(delimiter);
+                                    numberOfColumns = int.Parse(columns[1]);
+                                }
+                            }
+
+                            //insert Image by specifying two range
+
+                            InsertImage(sheet1, 0, 0, 1, numberOfColumns, logoStream);
+                        }
+                    }
+                    if (needMoveTotalColumn)
+                    {
+                        foreach (var customSheet in moveTotalSheets)
+                        {
+                            WorksheetPart sheet1 = GetSheetByName(workbookpart, customSheet.Key);
+                            //!!!panes
+                            var panes = sheet1.Worksheet.Descendants<Pane>();
+                            foreach (var item in panes)
+                            {
+                                item.TopLeftCell = GetExcelColumnName(customSheet.Value) + "2";
                             }
                         }
-
-                        //insert Image by specifying two range
-
-                        InsertImage(sheet1, 0, 0, 1, numberOfColumns, logoStream);
-                        //!!!panes
-                        /*var panes = sheet1.Worksheet.Descendants<Pane>();
-                        foreach (var item in panes)
-                        {
-                            item.TopLeftCell = "L9";
-                        }*/
                     }
                     document.WorkbookPart.Workbook.Save();
                     // Close the document handle.
@@ -482,6 +518,21 @@ namespace xlsxfmt
             }
 
             return sum - 1;
+        }
+        private string GetExcelColumnName(int columnNumber)
+        {
+            int dividend = columnNumber;
+            string columnName = String.Empty;
+            int modulo;
+
+            while (dividend > 0)
+            {
+                modulo = (dividend - 1) % 26;
+                columnName = Convert.ToChar(65 + modulo).ToString() + columnName;
+                dividend = (int)((dividend - modulo) / 26);
+            }
+
+            return columnName;
         }
 
         private List<xlsxfmt.format.Column> GetSubtotalCols(xlsxfmt.format.Sheet sheet)
@@ -881,6 +932,7 @@ namespace xlsxfmt
                 freezeCell = _yaml.Defaults.Sheet.FreezeOnCell;
             if (!string.IsNullOrEmpty(freezeCell))
                 wsht.SheetView.Freeze(GetFreezeRow(freezeCell), GetFreezeCol(freezeCell));
+            
             #endregion
             #region header row bg color
             //header row bg color
