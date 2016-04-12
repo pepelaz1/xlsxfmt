@@ -80,9 +80,17 @@ namespace xlsxfmt
                     else
                     {
                         //Console.WriteLine("Parsing options: " + args[i]);
-                        foreach (Match m in Regex.Matches(args[i], @"(\w+(?:-\w+)+)=(?:\""?)([0-9a-zA-Z_ ]+)(?:\""?)"))
+                        MatchCollection col = Regex.Matches(args[i], @"(\w+(?:-\w+)+)=(?:\""?)([0-9a-zA-Z_ ]+)(?:\""?)");
+                        if (col.Count == 0)
                         {
-                            _options.Add(m.Groups[1].Value, m.Groups[2].Value);
+                            throw new System.ArgumentException("Illegal argument option \"" + args[i] + "\" specified. Please, check usage note.");
+                        }
+                        else
+                        {
+                            foreach (Match m in col)
+                            {
+                                _options.Add(m.Groups[1].Value, m.Groups[2].Value);
+                            }
                         }
                             
                     }
