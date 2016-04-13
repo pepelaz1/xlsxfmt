@@ -1395,7 +1395,8 @@ namespace xlsxfmt
                     foreach (var r in item.Value)
                     {
                         wsht.Rows(r.startRow, r.endRow).Group();
-                        wsht.Rows(r.startRow, r.endRow).Collapse();
+                        if (item.Key != 0)
+                            wsht.Rows(r.startRow, r.endRow).Collapse();
                     }
                 }
                 //constructing grandtotal
