@@ -56,6 +56,7 @@ namespace xlsxfmt
             Console.WriteLine(@"--output-filename-prefix=prefix     prefix to be added to the beginning of the output file name");
             Console.WriteLine(@"--output-filename-postfix=postfix   postfix to be added to the end of the output file name (before the extension)");
             Console.WriteLine(@"--grand-total-prefix=prefix         string to be prepended to the ""Grand..."" on the last line of any subtotaling");
+            Console.WriteLine(@"--burst-on-column=sourceColumnName  Column name in every source sheet. Different values in this column should result into different output files");
         }
     }
 }

@@ -19,20 +19,28 @@ using xlsxfmt.format;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 using DocumentFormat.OpenXml.Validation;
+using System.Threading;
 
 namespace xlsxfmt
 {
+    private class XlsxFormatWorker
+    {
+
+    }
     public class XlsxFormatter
     {
         private string _sourceXlsx;
         private string _formatYaml;
-        private string _outputXlsx;
-        private List<String> optionKeys = new List<string>( new string[] {"output-filename-prefix", "output-filename-postfix", "grand-total-prefix"});
+        private string _outputXlsxBase;
+        private List<String> optionKeys = new List<string>( new string[] {"output-filename-prefix", "output-filename-postfix", "grand-total-prefix", "burst-on-column"});
         private Dictionary<string, string> _options = new Dictionary<string, string>();
         private Dictionary<int, string> _aggregateFunctions = new Dictionary<int, string>();
+        private Dictionary<String, int> _moveTotalSheets = new Dictionary<string, int>();
+        private List<String> _logoSheets = new List<string>();
         private string _delimiter = "~";
         private string _calcModeInternal = "internal";
         private string _calcModeFormula = "formula";
+        private string _burstOnColumn = "burst-on-column";
         public static Image _logo;
         private YamlFile _yaml;
 
@@ -74,7 +82,7 @@ namespace xlsxfmt
                     if (args[i].StartsWith("--") == false)
                     {
                         //Console.WriteLine("Parsing options: " + args[i]);
-                        _outputXlsx = args[i];
+                        _outputXlsxBase = args[i];
                         //break;
                     }
                     else
@@ -98,20 +106,17 @@ namespace xlsxfmt
             }
         }
 
-        private List<String> GetLogoSheets()
+        private void GetLogoSheets()
         {
-            List<String> sheets = new List<string>();
             foreach (var sheet in _yaml.Sheet)
             {
                 if (!String.IsNullOrEmpty(sheet.IncludeLogo) && sheet.IncludeLogo.Equals("true"))
-                    sheets.Add(sheet.Name);
+                    _logoSheets.Add(sheet.Name);
             }
-            return sheets;
         }
 
-        private Dictionary<String, int> GetMoveTotalSheets()
+        private void GetMoveTotalSheets()
         {
-            Dictionary<String, int> sheets = new Dictionary<String, int>();
             foreach (var sheet in _yaml.Sheet)
             {
                 Dictionary<int,int> colFuncs = GetColFuncs(sheet);
@@ -125,10 +130,9 @@ namespace xlsxfmt
                 if (colFuncs.Count>0){
                     int colNum = colFuncs.Keys.Min();
                     if (colNum > freezeCol)
-                        sheets.Add(sheet.Name, colNum);
+                        _moveTotalSheets.Add(sheet.Name, colNum);
                 }
             }
-            return sheets;
         }
 
         /// <summary>
@@ -345,7 +349,7 @@ namespace xlsxfmt
             try
             {
                 Uri uri = new Uri(logoPath);
-                logoStream = new FileStream(uri.AbsolutePath, FileMode.Open);
+                logoStream = new FileStream(uri.AbsolutePath, FileMode.Open, FileAccess.Read, FileShare.Read);
                 _logo = Image.FromStream(logoStream);
                 logoStream.Seek(0, SeekOrigin.Begin);
             }
@@ -356,53 +360,59 @@ namespace xlsxfmt
             return logoStream;
         }
 
-        public void Process()
+        private void DeserializeStopValues()
         {
-            // Read input parameters
-            var formatReader = new StreamReader(_formatYaml);
-            var formatDeserializer = new Deserializer(namingConvention: new CamelCaseNamingConvention(), ignoreUnmatched: true);
-            _yaml = formatDeserializer.Deserialize<YamlFile>(formatReader);
+            foreach (var sheet in _yaml.Sheet)
+            {
+                foreach (var col in sheet.Column)
+                {
+                    if (!String.IsNullOrEmpty(col.stopValues))
+                    {
+                        col.stopValuesList = Regex.Split(col.stopValues, @"((?:\""?)([0-9a-zA-Z_ ]+)(?:\""?))+");
+                    }
+                }
+            }
+        }
 
+        private List<String> GetBurstColumnValues(XLWorkbook sourceWorkbook, String burstColumnName)
+        {
+            List<String> result = new List<string>();
+            foreach (var sheet in sourceWorkbook.Worksheets)
+            {
+                var srcColumn = sheet.Columns().Where(x => x.Cell(1).Value.ToString()
+                   == burstColumnName).FirstOrDefault();
+                if (srcColumn == null)
+                {
+                    throw new System.ArgumentException("Sheet \"" + sheet.Name + "\" does not contain burst column \"" + burstColumnName +
+                                                       "\". Please, check source file.");
+                }
+                else
+                {
+                    var cellCnt = srcColumn.Cells().Count();
+                    for (int i = 2; i <= cellCnt; i++)
+                    {
+                        String colValue = srcColumn.Cell(i).Value.ToString();
+                        if (!result.Contains(colValue))
+                        {
+                            result.Add(colValue);
+                        }
+                    }
+                }
+            }
+            return result;
+        }
 
-            // Construct output filename
-            ConstructOutputFilename();
-
-            // Read source workbook
-            var sourceWorkbook = new XLWorkbook(_sourceXlsx);
-
-            // Create empty output workbook
-            var outputWorkbook = new XLWorkbook();
-
-            // Initialize aggregation functions
-            InitAggregateFunctions();
-
-            // Get logo sheets
-            List<String> logoSheets = GetLogoSheets();
-
-            Stream logoStream = loadLogo(_yaml.Format.LogoPath);
-
-            bool needLogoUsage = (logoSheets.Count > 0) && (logoStream != null);
-
-            Dictionary<String, int> moveTotalSheets = GetMoveTotalSheets();
-
-            bool needMoveTotalColumn = moveTotalSheets.Count > 0;
-
-            // Construct output workbook using source workbook and input params
-            Construct(sourceWorkbook, outputWorkbook, needLogoUsage);
-
-            // Save output file
-            outputWorkbook.SaveAs(_outputXlsx);
-
-
+        private void AddImageAndPaneMove(String workbookName, bool needLogoUsage, bool needMoveTotalColumn)
+        {
             if (needLogoUsage || needMoveTotalColumn)
             {
-                using (SpreadsheetDocument document = SpreadsheetDocument.Open(_outputXlsx, true))
+                using (SpreadsheetDocument document = SpreadsheetDocument.Open(workbookName, true))
                 {
                     WorkbookPart workbookpart = document.WorkbookPart;
                     //WorksheetPart sheet1 = workbookpart.WorksheetParts.First();
                     if (needLogoUsage)
                     {
-                        foreach (var customSheet in logoSheets)
+                        foreach (var customSheet in _logoSheets)
                         {
                             WorksheetPart sheet1 = GetSheetByName(workbookpart, customSheet);
 
@@ -421,20 +431,20 @@ namespace xlsxfmt
                             }
 
                             //insert Image by specifying two range
-
+                            Stream logoStream = loadLogo(_yaml.Format.LogoPath);
                             InsertImage(sheet1, 0, 0, 1, numberOfColumns, logoStream);
                         }
                     }
                     if (needMoveTotalColumn)
                     {
-                        foreach (var customSheet in moveTotalSheets)
+                        foreach (var customSheet in _moveTotalSheets)
                         {
                             WorksheetPart sheet1 = GetSheetByName(workbookpart, customSheet.Key);
                             //!!!panes
                             var panes = sheet1.Worksheet.Descendants<Pane>();
-                            foreach (var item in panes)
+                            foreach (var it in panes)
                             {
-                                item.TopLeftCell = GetExcelColumnName(customSheet.Value) + "2";
+                                it.TopLeftCell = GetExcelColumnName(customSheet.Value) + "2";
                             }
                         }
                     }
@@ -446,14 +456,101 @@ namespace xlsxfmt
             }
         }
 
-
-        private void ConstructOutputFilename()
+        public void ConstructWorkBook(XLWorkbook sourceWorkbook, String outputFileName, bool needLogoUsage, bool needMoveTotalColumn, String burstColumnName, String burstColumnValue)
         {
-            if (string.IsNullOrEmpty(_outputXlsx))
-            {
-                _outputXlsx = _yaml.Format.OutputFilenameBase;
+            // Create empty output workbook
+            var outputWorkbook = new XLWorkbook();
 
-                var fileName = Path.GetFileName(_outputXlsx);
+            // Construct output workbook using source workbook and input params
+            Construct(sourceWorkbook, outputWorkbook, needLogoUsage, burstColumnName, burstColumnValue);
+
+            // Save output file
+            outputWorkbook.SaveAs(outputFileName);
+
+            AddImageAndPaneMove(outputFileName, needLogoUsage, needMoveTotalColumn);
+        }
+
+        public void Process()
+        {
+            // Read input parameters
+            var formatReader = new StreamReader(_formatYaml);
+            var formatDeserializer = new Deserializer(namingConvention: new CamelCaseNamingConvention(), ignoreUnmatched: true);
+            _yaml = formatDeserializer.Deserialize<YamlFile>(formatReader);
+
+            DeserializeStopValues();
+
+            // Read source workbook
+            var sourceWorkbook = new XLWorkbook(_sourceXlsx);
+
+            bool needBursting = false;
+            int numOutputBooks = 1;
+
+            List<String> burstColumnValues = new List<string>();
+            if (_options.ContainsKey(_burstOnColumn))
+            {
+                burstColumnValues = GetBurstColumnValues(sourceWorkbook, _options[_burstOnColumn]);
+                needBursting = burstColumnValues.Count > 0;
+                if (needBursting)
+                    numOutputBooks = burstColumnValues.Count;
+            }
+
+            // Initialize aggregation functions
+            InitAggregateFunctions();
+
+            // Get logo sheets
+            GetLogoSheets();
+
+
+            Stream logoStream = loadLogo(_yaml.Format.LogoPath);
+            bool needLogoUsage = (_logoSheets.Count > 0) && (logoStream != null);
+
+            GetMoveTotalSheets();
+
+            bool needMoveTotalColumn = _moveTotalSheets.Count > 0;
+            
+            String burstColumnName = "";
+
+            Dictionary<String, String> outputs = new Dictionary<string, string>();
+            if (needBursting){
+                burstColumnName = _options[_burstOnColumn];
+                foreach (var item in burstColumnValues)
+                {
+                    String outputFileName = ConstructOutputFilename(item);
+                    outputs[item] = outputFileName;
+                }
+            }
+            else
+            {
+                String outputFileName = ConstructOutputFilename(null);
+                outputs[""] = outputFileName;
+            }
+
+            using (ManualResetEvent e = new ManualResetEvent(false))
+            {
+                foreach (var item in outputs)
+                {
+                    ThreadPool.QueueUserWorkItem(new WaitCallback(x=>{
+                        ConstructWorkBook(sourceWorkbook, item.Value, needLogoUsage, needMoveTotalColumn, burstColumnName, item.Key);
+                        if (Interlocked.Decrement(ref numOutputBooks) == 0)
+                            e.Set();
+                    }
+                    )
+                    );
+                }
+                e.WaitOne();
+            }
+            
+        }
+
+
+        private String ConstructOutputFilename(String burstColumnValue)
+        {
+            String result;
+            if (string.IsNullOrEmpty(_outputXlsxBase))
+            {
+                result = _yaml.Format.OutputFilenameBase;
+
+                var fileName = Path.GetFileName(result);
 
                 if (_options.ContainsKey(@"output-filename-prefix"))
                     fileName = _options[@"output-filename-prefix"] + fileName;
@@ -461,15 +558,20 @@ namespace xlsxfmt
                 if (_options.ContainsKey(@"output-filename-postfix"))
                     fileName = fileName + _options[@"output-filename-postfix"];
 
-                var dir = Path.GetPathRoot(_outputXlsx);
+                var dir = Path.GetPathRoot(result);
                 if (!string.IsNullOrEmpty(dir))
-                    _outputXlsx = dir + "\\" + fileName + @".xlsx";
+                    result = dir + "\\" + fileName + @".xlsx";
                 else
-                    _outputXlsx = fileName + @".xlsx";
+                    result = fileName + @".xlsx";
             }
+            else
+            {
+                result = _outputXlsxBase;
+            }
+            return result;
         }
 
-        private void Construct(XLWorkbook wsrc, XLWorkbook wout, bool needLogoUsage)
+        private void Construct(XLWorkbook wsrc, XLWorkbook wout, bool needLogoUsage, String burstColumnName, String burstColumnValue)
         {
             // Construct sheets
             foreach (var shtFmt in _yaml.Sheet)
@@ -482,7 +584,7 @@ namespace xlsxfmt
 
                     // Find source sheet in source workbook
                     var ssht = wsrc.Worksheets.Where(x => x.Name == source).FirstOrDefault();
-                    ConstructSheet(ssht, wout, shtFmt, needLogoUsage);
+                    ConstructSheet(ssht, wout, shtFmt, needLogoUsage, burstColumnName, burstColumnValue);
                 //}
             }
         }
@@ -794,6 +896,7 @@ namespace xlsxfmt
             }
 
         }
+        #region group functions
         private double VariancePopulation(List<Double> source)
         {
             // Excel VAR.P function
@@ -830,7 +933,7 @@ namespace xlsxfmt
             else
                 return 0;
         }
-
+        #endregion
         private Double GetGroupResult(List<Double> elements, int funcId)
         {
             if (_aggregateFunctions.ContainsKey(funcId))
@@ -910,7 +1013,7 @@ namespace xlsxfmt
             return calcMode;
         }
 
-        private void ConstructSheet(IXLWorksheet ssht, XLWorkbook wout, xlsxfmt.format.Sheet shtFmt, bool needLogoUsage)
+        private void ConstructSheet(IXLWorksheet ssht, XLWorkbook wout, xlsxfmt.format.Sheet shtFmt, bool needLogoUsage, String burstColumnName, String burstColumnValue)
         {
             IXLWorksheet wsht = wout.AddWorksheet(shtFmt.Name);
             int logoRows = 0;
@@ -1078,54 +1181,69 @@ namespace xlsxfmt
                 var cellCnt = srcColumn.Cells().Count();
                 for (int i = 2; i <= cellCnt; i++)
                 {
-                    wsht.Cell(rowNum, colNum).Value = srcColumn.Cell(i).Value;
-                    #region setdatacellstyle
-                    xlsxfmt.format.Font cellFont;
-                    if (colFmt.Font != null && colFmt.Font.Data != null)
-                        cellFont = colFmt.Font;
-                    else
-                        cellFont = shtFmt.Font;
-                    if (cellFont != null && cellFont.Data != null)
+                    if (!colFmt.stopValuesList.Contains(srcColumn.Cell(i).Value))
                     {
-                        //size
-                        if (!String.IsNullOrEmpty(cellFont.Data.Size))
+                        if (String.IsNullOrEmpty(burstColumnName) ||
+                                (!String.IsNullOrEmpty(burstColumnName) &&
+                                 source != null &&
+                                 source == burstColumnName &&
+                                 srcColumn.Cell(i).Value.Equals(burstColumnValue)
+                                )
+                            )
                         {
-                            double fontSz;
-                            Double.TryParse(cellFont.Data.Size, out fontSz);
-                            wsht.Cell(rowNum, colNum).Style.Font.SetFontSize(fontSz);
-                        }
-                        //style
-                        String dataStyle = "";
-                        if (!string.IsNullOrEmpty(cellFont.Data.Style))
-                        {
-                            dataStyle = cellFont.Data.Style;
-                        }
-                        else
-                        {
-                            if (_yaml.Defaults.Font.Data != null && _yaml.Defaults.Font.Data.Style != null)
-                                dataStyle = _yaml.Defaults.Font.Data.Style;
-                        }
-                        if (!String.IsNullOrEmpty(dataStyle))
-                        {
-                            if (dataStyle == "bold")
+                            wsht.Cell(rowNum, colNum).Value = srcColumn.Cell(i).Value;
+                            #region setdatacellstyle
+                            xlsxfmt.format.Font cellFont;
+                            if (colFmt.Font != null && colFmt.Font.Data != null)
+                                cellFont = colFmt.Font;
+                            else
+                                cellFont = shtFmt.Font;
+                            if (cellFont != null && cellFont.Data != null)
                             {
-                                wsht.Cell(rowNum, colNum).Style.Font.SetBold();
-                            }
-                            else if (dataStyle == "italic")
-                            {
-                                wsht.Cell(rowNum, colNum).Style.Font.SetItalic();
-                            }
-                            else if (dataStyle == "underline")
-                            {
-                                wsht.Cell(rowNum, colNum).Style.Font.SetUnderline();
-                            }
-                        }
-                        //conditional-formatting
+                                //size
+                                if (!String.IsNullOrEmpty(cellFont.Data.Size))
+                                {
+                                    double fontSz;
+                                    Double.TryParse(cellFont.Data.Size, out fontSz);
+                                    wsht.Cell(rowNum, colNum).Style.Font.SetFontSize(fontSz);
+                                }
+                                //style
+                                String dataStyle = "";
+                                if (!string.IsNullOrEmpty(cellFont.Data.Style))
+                                {
+                                    dataStyle = cellFont.Data.Style;
+                                }
+                                else
+                                {
+                                    if (_yaml.Defaults.Font.Data != null && _yaml.Defaults.Font.Data.Style != null)
+                                        dataStyle = _yaml.Defaults.Font.Data.Style;
+                                }
+                                if (!String.IsNullOrEmpty(dataStyle))
+                                {
+                                    if (dataStyle == "bold")
+                                    {
+                                        wsht.Cell(rowNum, colNum).Style.Font.SetBold();
+                                    }
+                                    else if (dataStyle == "italic")
+                                    {
+                                        wsht.Cell(rowNum, colNum).Style.Font.SetItalic();
+                                    }
+                                    else if (dataStyle == "underline")
+                                    {
+                                        wsht.Cell(rowNum, colNum).Style.Font.SetUnderline();
+                                    }
+                                }
+                                //conditional-formatting
 
+                            }
+                            #endregion
+
+                        }
                     }
-                    #endregion
                     rowNum++;
                 }
+                if (colFmt.hidden == "true")
+                    wsht.Column(colNum).Hide();
                 colNum++;
                 rowNum = startRowNum;
             }
@@ -1221,7 +1339,7 @@ namespace xlsxfmt
             int lastRowUsed = wsht.LastRowUsed().RowNumber();
             int sortColNumber = lastColUsed + 1;
             var tableRange = wsht.Range(wsht.FirstCellUsed().CellBelow(), wsht.LastColumnUsed().LastCellUsed());
-            if (groupLevel > 0)
+            if (groupLevel > 0 && !tableRange.IsEmpty())
             {
                 int rowCnt = tableRange.RowCount();
                 List<SortKeyLevel> totalKeys = new List<SortKeyLevel>();
@@ -1282,7 +1400,7 @@ namespace xlsxfmt
 
             // At this point we have filled and formatted header data and value cells data
             // Now it's time to add totals and outlines if needed
-
+            #region generating totals
             if (groupLevel > 0)
             //if (1==2)
             {
@@ -1427,6 +1545,22 @@ namespace xlsxfmt
                 wsht.Column(sortColNumber).Clear();
                 //wshtTemp.Delete();
             }
+            #endregion
+            #region process topnrows
+            if (!String.IsNullOrEmpty(shtFmt.topNRows))
+            {
+                int topRows = 0;
+                Int32.TryParse(shtFmt.topNRows, out topRows);
+                int lastRowNumber = wsht.LastRowUsed().RowNumber();
+                if (topRows > 0 && topRows > lastRowNumber)
+                {
+                    for (int i = topRows + 1; i <= lastRowNumber; i++)
+                    {
+                        wsht.Row(i).Delete();
+                    }
+                }
+            }
+            #endregion
             // Adjust columns width
             wsht.Columns().AdjustToContents();
             colNum = 1;
@@ -1440,6 +1574,22 @@ namespace xlsxfmt
                 #endregion
                 colNum++;
             }
+            #region empty sheet
+            if (wsht.IsEmpty())
+            {
+                if (_yaml.Format.emptySheet != null)
+                {
+                    if (_yaml.Format.emptySheet.defaultValue != null)
+                    {
+                        wsht.Cell(1, 2).Value = _yaml.Format.emptySheet.defaultValue;
+                    }
+                    if (_yaml.Format.emptySheet.exclude == "true")
+                    {
+                        wsht.Delete();
+                    }
+                }
+            }
+            #endregion
         }
 
     }

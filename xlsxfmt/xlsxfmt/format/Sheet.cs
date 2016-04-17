@@ -25,5 +25,7 @@ namespace xlsxfmt.format
         public Font Font { get; set; }
         [YamlMember(Alias = "totals-calculation-mode")]
         public string TotalsCalculationMode { get; set; }
+        [YamlMember(Alias = "top-n-rows")]
+        public string topNRows { get; set; }
     }
 }

@@ -16,5 +16,8 @@ namespace xlsxfmt.format
        public string LogoPath { get; set; }
        [YamlMember(Alias = "output-filename-base")]
        public string OutputFilenameBase { get; set; }
+       [YamlMember(Alias = "empty-sheet")]
+       public EmptySheet emptySheet { get; set; }
+
     }
 }

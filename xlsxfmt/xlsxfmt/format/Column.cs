@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using YamlDotNet.Serialization;
 
@@ -25,6 +26,12 @@ namespace xlsxfmt.format
         public Subtotal Subtotal { get; set; }
         [YamlMember(Alias = "calculation-mode")]
         public String calculationMode { get; set; }
+        [YamlMember(Alias = "stop-values")]
+        public String stopValues { get; set; }
+
+        public string[] stopValuesList { get; set; }
+        public String hidden { get; set; }
+
 
     }
 }
