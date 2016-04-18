@@ -58,6 +58,7 @@
     <Compile Include="format\ConditionalFormatting.cs" />
     <Compile Include="format\Data.cs" />
     <Compile Include="format\Defaults.cs" />
+    <Compile Include="format\EmptySheet.cs" />
     <Compile Include="format\Font.cs" />
     <Compile Include="format\Footer.cs" />
     <Compile Include="format\Format.cs" />
