@@ -39,8 +39,14 @@ namespace xlsxfmt
         private string _calcModeInternal = "internal";
         private string _calcModeFormula = "formula";
         private string _burstOnColumn = "burst-on-column";
-        public static Image _logo;
+        //private Image _logo;
+        private int _logoHeight;
+        private int _logoWidth;
         private YamlFile _yaml;
+        private Stream _logoStream;
+        private float _logoDpiY;
+        private float _logoHorizontalResolution;
+        private float _logoVerticalResolution;
 
         public void ValidateArguments()
         {
@@ -148,7 +154,7 @@ namespace xlsxfmt
         /// <param name="endRowIndex">The ending row index</param>
         /// <param name="endColumnIndex">The ending column index</param>
         /// <param name="imageStream">Stream which contains the image data</param>
-        private static void InsertImage(WorksheetPart sheet1, int startRowIndex, int startColumnIndex, int endRowIndex, int endColumnIndex, Stream imageStream)
+        private void InsertImage(WorksheetPart sheet1, int startRowIndex, int startColumnIndex, int endRowIndex, int endColumnIndex, Stream imageStream)
         {
             //Inserting a drawing element in worksheet
             //Make sure that the relationship id is same for drawing element in worksheet and its relationship part
@@ -177,6 +183,7 @@ namespace xlsxfmt
             GenerateDrawingsPart1Content(drawingsPart1);
             //Adding the image
             ImagePart imagePart1 = drawingsPart1.AddNewPart<ImagePart>("image/jpeg", "rId1");
+            imageStream.Seek(0, SeekOrigin.Begin);
             imagePart1.FeedData(imageStream);
         }
         #region Helper methods
@@ -241,7 +248,7 @@ namespace xlsxfmt
         }
 
         // Generates content of drawingsPart1.
-        public static void GenerateDrawingsPart1Content(DrawingsPart drawingsPart1)
+        public void GenerateDrawingsPart1Content(DrawingsPart drawingsPart1)
         {
             Xdr.WorksheetDrawing worksheetDrawing1 = new Xdr.WorksheetDrawing();
             worksheetDrawing1.AddNamespaceDeclaration("xdr", "http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing");
@@ -278,12 +285,12 @@ namespace xlsxfmt
             A.Extents extents = new A.Extents();
 
             //if (width == null)
-            extents.Cx = (long)_logo.Width * (long)((float)914400 / _logo.HorizontalResolution);
+            extents.Cx = (long)_logoWidth * (long)((float)914400 / _logoHorizontalResolution);
             //else
             //   extents.Cx = width;
 
             //  if (height == null)
-            extents.Cy = (long)_logo.Height * (long)((float)914400 / _logo.VerticalResolution);
+            extents.Cy = (long)_logoHeight * (long)((float)914400 / _logoVerticalResolution);
             // else
             //    extents.Cy = height;
 
@@ -357,7 +364,14 @@ namespace xlsxfmt
             {
                 Uri uri = new Uri(logoPath);
                 logoStream = new FileStream(uri.AbsolutePath, FileMode.Open, FileAccess.Read, FileShare.Read);
-                _logo = Image.FromStream(logoStream);
+                Image logo = Image.FromStream(logoStream);
+                _logoHeight = logo.Height;
+                _logoWidth = logo.Width;
+                _logoHorizontalResolution = logo.HorizontalResolution;
+                _logoVerticalResolution = logo.VerticalResolution;
+                Graphics g = Graphics.FromImage(logo);
+                _logoDpiY = g.DpiY;
+                g.Dispose();
                 //_logoStream = Stream.Synchronized(logoStream);
                 logoStream.Seek(0, SeekOrigin.Begin);
             }
@@ -439,8 +453,11 @@ namespace xlsxfmt
                             }
 
                             //insert Image by specifying two range
-                            Stream logoStream = loadLogo(_yaml.Format.LogoPath);
-                            InsertImage(sheet1, 0, 0, 1, numberOfColumns, logoStream);
+                           // Stream logoStream = loadLogo(_yaml.Format.LogoPath);
+                            //Stream stream = Stream.Synchronized(_logoStream);
+                            Uri uri = new Uri(_yaml.Format.LogoPath);
+                            Stream stream = new FileStream(uri.AbsolutePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                            InsertImage(sheet1, 0, 0, 1, numberOfColumns, stream);
                         }
                     }
                     if (needMoveTotalColumn)
@@ -467,13 +484,10 @@ namespace xlsxfmt
             }
         }
 
-        public void ConstructWorkBook(XLWorkbook sourceWorkbook, String outputFileName, bool needLogoUsage, bool needMoveTotalColumn, String burstColumnName, String burstColumnValue)
+        public void ConstructWorkBook(XLWorkbook sourceWorkbook,XLWorkbook outputWorkbook, String outputFileName, bool needLogoUsage, bool needMoveTotalColumn, String burstColumnName, String burstColumnValue)
         {
           //  try
             //{
-                // Create empty output workbook
-                var outputWorkbook = new XLWorkbook();
-
                 // Construct output workbook using source workbook and input params
                 Construct(sourceWorkbook, outputWorkbook, needLogoUsage, burstColumnName, burstColumnValue);
 
@@ -520,6 +534,7 @@ namespace xlsxfmt
 
 
             Stream logoStream = loadLogo(_yaml.Format.LogoPath);
+            _logoStream = Stream.Synchronized(logoStream);
             bool needLogoUsage = (_logoSheets.Count > 0) && (logoStream != null);
 
             GetMoveTotalSheets();
@@ -528,20 +543,20 @@ namespace xlsxfmt
 
             String burstColumnName = "";
 
-            Dictionary<String, String> outputs = new Dictionary<string, string>();
+            Dictionary<String, KeyValuePair<String, XLWorkbook>> outputs = new Dictionary<string, KeyValuePair<String, XLWorkbook>>();
             if (needBursting)
             {
                 burstColumnName = _options[_burstOnColumn];
                 foreach (var item in burstColumnValues)
                 {
                     String outputFileName = ConstructOutputFilename(item);
-                    outputs[item] = outputFileName;
+                    outputs[item] = new KeyValuePair<string, XLWorkbook>(outputFileName, new XLWorkbook());
                 }
             }
             else
             {
                 String outputFileName = ConstructOutputFilename(null);
-                outputs[""] = outputFileName;
+                outputs[""] = new KeyValuePair<string, XLWorkbook>(outputFileName, new XLWorkbook());
             }
 
             using (ManualResetEvent e = new ManualResetEvent(false))
@@ -550,7 +565,7 @@ namespace xlsxfmt
                 {
                     ThreadPool.QueueUserWorkItem(new WaitCallback(x =>
                     {
-                        ConstructWorkBook(sourceWorkbook, item.Value, needLogoUsage, needMoveTotalColumn, burstColumnName, item.Key);
+                        ConstructWorkBook(sourceWorkbook, item.Value.Value, item.Value.Key, needLogoUsage, needMoveTotalColumn, burstColumnName, item.Key);
                         if (Interlocked.Decrement(ref numOutputBooks) == 0)
                             e.Set();
                     }
@@ -1067,6 +1082,8 @@ namespace xlsxfmt
             int logoRows = 0;
             int headerRows = 1;
             int startRowNum = 1;
+            int numDataRows = 0;
+            
             bool logoInserted = false;
             List<int> rowsExcluded = GetExcludedRows(ssht, shtFmt);
             int burstColNumber = 0;
@@ -1081,9 +1098,9 @@ namespace xlsxfmt
             }
             if (needLogoUsage && !String.IsNullOrEmpty(shtFmt.IncludeLogo) && shtFmt.IncludeLogo.Equals("true"))
             {
-                Graphics g = Graphics.FromImage(_logo);
-                wsht.Row(1).Height = (int)(_logo.Height * 72 / g.DpiY) + 1;//!!!
-                g.Dispose();
+               // Graphics g = Graphics.FromImage(_logo);
+                wsht.Row(1).Height = (int)(_logoHeight * 72 / _logoDpiY) + 1;//!!!
+                //g.Dispose();
                 logoRows = 1;
                 logoInserted = true;
             }
@@ -1091,6 +1108,7 @@ namespace xlsxfmt
             {
                 logoRows = 0;
             }
+            int lastRowUsed = headerRows + logoRows;
             startRowNum += logoRows;
             int rowNum = startRowNum;
             int colNum = 1;
@@ -1189,6 +1207,7 @@ namespace xlsxfmt
                 }
             }
             #endregion
+            int cRowNum = startRowNum;
             foreach (var colFmt in shtFmt.Column)
             {
                 var source = colFmt.Name;
@@ -1200,7 +1219,7 @@ namespace xlsxfmt
                     == source).FirstOrDefault();
 
                 // Set output column name
-                wsht.Cell(rowNum, colNum).Value = colFmt.Name;
+                wsht.Cell(cRowNum, colNum).Value = colFmt.Name;
                 #region setheaderstyle
                 String headerStyle = "";
                 if (shtFmt.Font != null && shtFmt.Font.Header != null)
@@ -1235,9 +1254,10 @@ namespace xlsxfmt
                     }
                 }
                 #endregion
-                rowNum++;
+                Interlocked.Increment(ref rowNum);
                 // Populate output column cells
                 var cellCnt = srcColumn.Cells().Count();
+                
                 for (int i = 2; i <= cellCnt && !rowsExcluded.Contains(i); i++)
                 {
                     if (String.IsNullOrEmpty(burstColumnName) ||
@@ -1246,7 +1266,8 @@ namespace xlsxfmt
                             )
                         )
                     {
-                        wsht.Cell(rowNum, colNum).Value = srcColumn.Cell(i).Value;
+                        cRowNum++;
+                        wsht.Cell(cRowNum, colNum).Value = srcColumn.Cell(i).Value;
                         #region setdatacellstyle
                         xlsxfmt.format.Font cellFont;
                         if (colFmt.Font != null && colFmt.Font.Data != null)
@@ -1292,15 +1313,13 @@ namespace xlsxfmt
 
                         }
                         #endregion
-
-                    }
-
-                    rowNum++;
+                    }                 
                 }
                 if (colFmt.hidden == "true")
                     wsht.Column(colNum).Hide();
-                colNum++;
-                rowNum = startRowNum;
+                numDataRows = cRowNum - logoRows - headerRows;
+                Interlocked.Increment(ref colNum);
+                cRowNum = startRowNum;
             }
 
             colNum = 1;
@@ -1391,9 +1410,10 @@ namespace xlsxfmt
             IXLRow curRow, prevRow;
             int groupLevel = lc.Count;
             int lastColUsed = wsht.LastColumnUsed().ColumnNumber();
-            int lastRowUsed = wsht.LastRowUsed().RowNumber();
+            lastRowUsed += numDataRows;
             int sortColNumber = lastColUsed + 1;
-            var tableRange = wsht.Range(wsht.FirstCellUsed().CellBelow(), wsht.LastColumnUsed().LastCellUsed());
+            //var tableRange = wsht.Range(wsht.FirstCellUsed().CellBelow(), wsht.LastColumnUsed().LastCellUsed());
+            var tableRange = wsht.Range(wsht.FirstCellUsed().CellBelow(), wsht.Row(lastRowUsed).LastCellUsed());
             if (groupLevel > 0 && !tableRange.IsEmpty())
             {
                 int rowCnt = tableRange.RowCount();
@@ -1421,25 +1441,26 @@ namespace xlsxfmt
 
                 }
                 // Adding lines to the end
-                IXLRow lastR = wsht.LastRowUsed();
+                //lastRowUsed = wsht.LastRowUsed().RowNumber();
                 var sortKeys = totalKeys.GroupBy(s => new { s.grouplevel, s.key }).Select(x => new SortKeyLevel(x.Key.key, x.Key.grouplevel)).ToList();
                 for (int i = 0; i < sortKeys.Count(); i++)
                 {
-                    //lastR.InsertRowsBelow(1);
-                    wsht.Cell(lastRowUsed + i + 1, sortColNumber).Value = groupLevel - totalKeys[i].grouplevel;
+                    Interlocked.Increment(ref lastRowUsed);
+                    wsht.Cell(lastRowUsed, sortColNumber).Value = groupLevel - totalKeys[i].grouplevel;
                     string[] keys = sortKeys[i].key.Split(new string[] { _delimiter }, StringSplitOptions.None);
                     for (int j = 0; j < keys.Length; j++)
                     {
                         if (!String.IsNullOrEmpty(keys[j]))
-                            wsht.Cell(lastRowUsed + i + 1, lc[j].Number).Value = keys[j];
+                            wsht.Cell(lastRowUsed, lc[j].Number).Value = keys[j];
                     }
-                    lastR = lastR.RowBelow();
+                   
                 }
             }
 
             //Sorting
-
-            var tableSortRange = wsht.Range(wsht.FirstCellUsed().CellBelow(), wsht.LastColumnUsed().LastCellUsed());
+            var fcu = wsht.FirstCellUsed();
+            var lcu = wsht.LastColumnUsed();
+            var tableSortRange = wsht.Range(wsht.FirstCellUsed().CellBelow(), wsht.Row(lastRowUsed).LastCellUsed());
             if (shtFmt.Sort.Count > 0)
             {
                 foreach (Sort s in shtFmt.Sort)
@@ -1455,6 +1476,7 @@ namespace xlsxfmt
 
             // At this point we have filled and formatted header data and value cells data
             // Now it's time to add totals and outlines if needed
+            
             #region generating totals
             if (groupLevel > 0)
             //if (1==2)
@@ -1507,12 +1529,24 @@ namespace xlsxfmt
                         {
                             for (int j = 0; j < groupLevel + 1; j++)
                             {
-                                String vStr = wsht.Cell(curRowNumber, coLFunc.Key).Value.ToString().Trim();
-                                String v = wsht.Cell(curRowNumber, coLFunc.Key).Value.ToString();
-                                Double d;
-                                Double.TryParse(v, out d);
-                                Double val = (String.IsNullOrEmpty(vStr) ? 0 : d);
-                                elements[coLFunc.Key][j].Add(val);
+                                var rv = wsht.Cell(curRowNumber, coLFunc.Key);
+                                if (rv != null)
+                                {
+                                    try
+                                    {
+                                        var vs = rv.Value;
+                                        String vStr = vs.ToString().Trim();
+                                        String v = wsht.Cell(curRowNumber, coLFunc.Key).Value.ToString();
+                                        Double d;
+                                        Double.TryParse(v, out d);
+                                        Double val = (String.IsNullOrEmpty(vStr) ? 0 : d);
+                                        elements[coLFunc.Key][j].Add(val);
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        elements[coLFunc.Key][j].Add(0);
+                                    }
+                                }
                             }
                         }
                         for (int i = 0; i < groupLevel + 1; i++)
@@ -1578,13 +1612,14 @@ namespace xlsxfmt
                     }
                 }
                 //constructing grandtotal
-                int grandTotalRowNumber = tableSortRange.LastRowUsed().RowNumber() + 1;
+                int grandTotalRowNumber = lastRowUsed + 1;
                 String prefix = "";
                 if (_options.ContainsKey(@"grand-total-prefix"))
                     prefix = prefix + _options[@"grand-total-prefix"] + " ";
                 wsht.Cell(grandTotalRowNumber, wsht.FirstColumnUsed().ColumnNumber()).Value = prefix + "Grand total";
 
-                SetGrandTotalRowStyle(0, wsht.LastRowUsed(), lc, colFuncs, shtFmt);
+                SetGrandTotalRowStyle(0, wsht.Row(grandTotalRowNumber), lc, colFuncs, shtFmt);
+                Interlocked.Increment(ref lastRowUsed);
                 foreach (var colFunc in (from f in colFuncs orderby f.Key select f))
                 {
                     String calcMode = GetCalcMode(colFunc.Key, shtFmt);
@@ -1606,15 +1641,15 @@ namespace xlsxfmt
                 //wshtTemp.Delete();
             }
             #endregion
+            
             #region process topnrows
             if (!String.IsNullOrEmpty(shtFmt.topNRows))
             {
                 int topRows = 0;
                 Int32.TryParse(shtFmt.topNRows, out topRows);
-                int lastRowNumber = wsht.LastRowUsed().RowNumber();
-                if (topRows > 0 && topRows > lastRowNumber)
+                if (topRows > 0 && topRows > lastRowUsed)
                 {
-                    for (int i = topRows + 1; i <= lastRowNumber; i++)
+                    for (int i = topRows + 1; i <= lastRowUsed; i++)
                     {
                         wsht.Row(i).Delete();
                     }

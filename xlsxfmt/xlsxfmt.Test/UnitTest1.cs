@@ -15,6 +15,7 @@ namespace xlsxfmt.Test
                 @"--output-filename-prefix=_outpref_",
                 @"--output-filename-postfix=_outpost_",
                 @"--grand-total-prefix=""General Medical System""",
+                @"--burst-on-column=Building",
                 @"examples\overriden output.xlsx",
             });
 
