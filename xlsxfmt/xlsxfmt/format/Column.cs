@@ -27,9 +27,7 @@ namespace xlsxfmt.format
         [YamlMember(Alias = "calculation-mode")]
         public String calculationMode { get; set; }
         [YamlMember(Alias = "stop-values")]
-        public String stopValues { get; set; }
-
-        public string[] stopValuesList { get; set; }
+        public List<StopValue> stopValues { get; set; }
         public String hidden { get; set; }
 
 

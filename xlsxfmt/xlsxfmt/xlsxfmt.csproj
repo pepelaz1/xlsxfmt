@@ -65,6 +65,7 @@
     <Compile Include="format\Header.cs" />
     <Compile Include="format\Sheet.cs" />
     <Compile Include="format\Sort.cs" />
+    <Compile Include="format\StopValue.cs" />
     <Compile Include="format\Subtotal.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -82,6 +83,9 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="examples\test input1.xlsx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="examples\test input3.xlsx">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <None Include="packages.config" />
