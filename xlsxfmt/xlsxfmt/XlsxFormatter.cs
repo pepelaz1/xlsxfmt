@@ -91,7 +91,7 @@ namespace xlsxfmt
                         int lastIndex = args[i].LastIndexOf('.');
                         _outputXlsxBaseName = args[i].Substring(0, lastIndex);
                         _outputXlsxBaseExt = args[i].Substring(lastIndex);
-                        
+
                         //break;
                     }
                     else
@@ -382,19 +382,19 @@ namespace xlsxfmt
             return logoStream;
         }
 
-       /* private void DeserializeStopValues()
-        {
-            foreach (var sheet in _yaml.Sheet)
-            {
-                foreach (var col in sheet.Column)
-                {
-                    if (!String.IsNullOrEmpty(col.stopValues))
-                    {
-                        col.stopValuesList = Regex.Split(col.stopValues, @"((?:\""?)([0-9a-zA-Z_ ]+)(?:\""?))+");
-                    }
-                }
-            }
-        }*/
+        /* private void DeserializeStopValues()
+         {
+             foreach (var sheet in _yaml.Sheet)
+             {
+                 foreach (var col in sheet.Column)
+                 {
+                     if (!String.IsNullOrEmpty(col.stopValues))
+                     {
+                         col.stopValuesList = Regex.Split(col.stopValues, @"((?:\""?)([0-9a-zA-Z_ ]+)(?:\""?))+");
+                     }
+                 }
+             }
+         }*/
 
         private List<String> GetBurstColumnValues(XLWorkbook sourceWorkbook, String burstColumnName)
         {
@@ -438,26 +438,29 @@ namespace xlsxfmt
                         {
                             WorksheetPart sheet1 = GetSheetByName(workbookpart, customSheet);
 
-                            Row row = sheet1.Worksheet.GetFirstChild<SheetData>().Elements<Row>().FirstOrDefault();
-                            var numberOfColumns = 0;
-                            if (row != null)
+                            if (sheet1 != null)
                             {
-                                var spans = row.Spans != null ? row.Spans.InnerText : "";
-                                if (spans != String.Empty)
+                                Row row = sheet1.Worksheet.GetFirstChild<SheetData>().Elements<Row>().FirstOrDefault();
+                                var numberOfColumns = 0;
+                                if (row != null)
                                 {
-                                    char[] delimiter = new char[1];
-                                    delimiter[0] = ':';
-                                    string[] columns = spans.Split(delimiter);
-                                    numberOfColumns = int.Parse(columns[1]);
+                                    var spans = row.Spans != null ? row.Spans.InnerText : "";
+                                    if (spans != String.Empty)
+                                    {
+                                        char[] delimiter = new char[1];
+                                        delimiter[0] = ':';
+                                        string[] columns = spans.Split(delimiter);
+                                        numberOfColumns = int.Parse(columns[1]);
+                                    }
                                 }
-                            }
 
-                            //insert Image by specifying two range
-                           // Stream logoStream = loadLogo(_yaml.Format.LogoPath);
-                            //Stream stream = Stream.Synchronized(_logoStream);
-                            Uri uri = new Uri(_yaml.Format.LogoPath);
-                            Stream stream = new FileStream(uri.AbsolutePath, FileMode.Open, FileAccess.Read, FileShare.Read);
-                            InsertImage(sheet1, 0, 0, 1, numberOfColumns, stream);
+                                //insert Image by specifying two range
+                                // Stream logoStream = loadLogo(_yaml.Format.LogoPath);
+                                //Stream stream = Stream.Synchronized(_logoStream);
+                                Uri uri = new Uri(_yaml.Format.LogoPath);
+                                Stream stream = new FileStream(uri.AbsolutePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+                                InsertImage(sheet1, 0, 0, 1, numberOfColumns, stream);
+                            }
                         }
                     }
                     if (needMoveTotalColumn)
@@ -484,22 +487,22 @@ namespace xlsxfmt
             }
         }
 
-        public void ConstructWorkBook(XLWorkbook sourceWorkbook,XLWorkbook outputWorkbook, String outputFileName, bool needLogoUsage, bool needMoveTotalColumn, String burstColumnName, String burstColumnValue)
+        public void ConstructWorkBook(XLWorkbook sourceWorkbook, XLWorkbook outputWorkbook, String outputFileName, bool needLogoUsage, bool needMoveTotalColumn, String burstColumnName, String burstColumnValue)
         {
-            try
-            {
-                // Construct output workbook using source workbook and input params
-                Construct(sourceWorkbook, outputWorkbook, needLogoUsage, burstColumnName, burstColumnValue);
+            // try
+            //{
+            // Construct output workbook using source workbook and input params
+            Construct(sourceWorkbook, outputWorkbook, needLogoUsage, burstColumnName, burstColumnValue);
 
-                // Save output file
-                outputWorkbook.SaveAs(outputFileName);
+            // Save output file
+            outputWorkbook.SaveAs(outputFileName);
 
-                AddImageAndPaneMove(outputFileName, needLogoUsage, needMoveTotalColumn);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.Message);
-            }
+            AddImageAndPaneMove(outputFileName, needLogoUsage, needMoveTotalColumn);
+            //  }
+            // catch (Exception ex)
+            //{
+            //    Console.WriteLine(ex.Message);
+            // }
         }
 
         public void Process()
@@ -1074,7 +1077,7 @@ namespace xlsxfmt
                     for (int i = 2; i <= cellCnt; i++)
                     {
                         String v = srcColumn.Cell(i).Value.ToString();
-                        if (col.stopValues.Any(x=>x.stopValue==v) && !excludedRows.Contains(i))
+                        if (col.stopValues.Any(x => x.stopValue == v) && !excludedRows.Contains(i))
                         {
                             excludedRows.Add(i);
                         }
@@ -1086,12 +1089,31 @@ namespace xlsxfmt
 
         private void ConstructSheet(IXLWorksheet ssht, XLWorkbook wout, xlsxfmt.format.Sheet shtFmt, bool needLogoUsage, String burstColumnName, String burstColumnValue)
         {
-            IXLWorksheet wsht = wout.AddWorksheet(shtFmt.Name);
+            IXLWorksheet wsht;
+            if (shtFmt.Source == null)
+            {
+                if (_yaml.Format.emptySheet != null)
+                {
+                    if (_yaml.Format.emptySheet.exclude == "true")
+                    {
+                        return;
+                    }
+                    if (_yaml.Format.emptySheet.defaultValue != null)
+                    {
+                        wsht = wout.AddWorksheet(shtFmt.Name);
+                        wsht.Cell(1, 2).Value = _yaml.Format.emptySheet.defaultValue;
+                        return;
+                    }
+                }
+                return;
+
+            }
+            wsht = wout.AddWorksheet(shtFmt.Name);
             int logoRows = 0;
             int headerRows = 1;
             int startRowNum = 1;
             int numDataRows = 0;
-            
+
             bool logoInserted = false;
             List<int> rowsExcluded = GetExcludedRows(ssht, shtFmt);
             int burstColNumber = 0;
@@ -1106,7 +1128,7 @@ namespace xlsxfmt
             }
             if (needLogoUsage && !String.IsNullOrEmpty(shtFmt.IncludeLogo) && shtFmt.IncludeLogo.Equals("true"))
             {
-               // Graphics g = Graphics.FromImage(_logo);
+                // Graphics g = Graphics.FromImage(_logo);
                 wsht.Row(1).Height = (int)(_logoHeight * 72 / _logoDpiY) + 1;//!!!
                 //g.Dispose();
                 logoRows = 1;
@@ -1215,198 +1237,217 @@ namespace xlsxfmt
                 }
             }
             #endregion
-            
-            foreach (var colFmt in shtFmt.Column)
+
+            //for(int j=0; j<shtFmt.Column.Count; j++)
+            foreach (format.Column colFmt in shtFmt.Column)
             {
                 var source = colFmt.Name;
                 if (!string.IsNullOrEmpty(colFmt.Source))
                     source = colFmt.Source;
-
                 // Find corresponding column in source sheet
+                var cols = ssht.Columns();
                 var srcColumn = ssht.Columns().Where(x => x.Cell(1).Value.ToString()
                     == source).FirstOrDefault();
-
-                // Set output column name
-                wsht.Cell(rowNum, colNum).Value = colFmt.Name;
-                #region setheaderstyle
-                String headerStyle = "";
-                if (shtFmt.Font != null && shtFmt.Font.Header != null)
+                try
                 {
-                    if (!string.IsNullOrEmpty(shtFmt.Font.Header.Style))
+                    if (srcColumn != null)
                     {
-                        headerStyle = shtFmt.Font.Header.Style;
-                    }
-                    else
-                    {
-                        headerStyle = _yaml.Defaults.Font.Header.Style;
-                    }
-
-                }
-                else if (_yaml.Defaults.Font != null && _yaml.Defaults.Font.Header != null)
-                {
-                    headerStyle = _yaml.Defaults.Font.Header.Style;
-                }
-                if (!String.IsNullOrEmpty(headerStyle))
-                {
-                    if (headerStyle == "bold")
-                    {
-                        wsht.Cell(rowNum, colNum).Style.Font.SetBold();
-                    }
-                    else if (headerStyle == "italic")
-                    {
-                        wsht.Cell(rowNum, colNum).Style.Font.SetItalic();
-                    }
-                    else if (headerStyle == "underline")
-                    {
-                        wsht.Cell(rowNum, colNum).Style.Font.SetUnderline();
-                    }
-                }
-                #endregion
-                // Populate output column cells
-                var cellCnt = srcColumn.Cells().Count();
-                
-                for (int i = 2; i <= cellCnt; i++)
-                {
-                    if (!rowsExcluded.Contains(i)){
-                        if (String.IsNullOrEmpty(burstColumnName) ||
-                                (burstColNumber != 0 &&
-                                 ssht.Cell(i, burstColNumber).Value.Equals(burstColumnValue)
-                                )
-                            )
+                        // Set output column name
+                        wsht.Cell(rowNum, colNum).Value = colFmt.Name;
+                        #region setheaderstyle
+                        String headerStyle = "";
+                        if (shtFmt.Font != null && shtFmt.Font.Header != null)
                         {
-                            rowNum++;
-                            wsht.Cell(rowNum, colNum).Value = srcColumn.Cell(i).Value;
-                            #region setdatacellstyle
-                            xlsxfmt.format.Font cellFont;
-                            if (colFmt.Font != null && colFmt.Font.Data != null)
-                                cellFont = colFmt.Font;
-                            else
-                                cellFont = shtFmt.Font;
-                            if (cellFont != null && cellFont.Data != null)
+                            if (!string.IsNullOrEmpty(shtFmt.Font.Header.Style))
                             {
-                                //size
-                                if (!String.IsNullOrEmpty(cellFont.Data.Size))
-                                {
-                                    double fontSz;
-                                    Double.TryParse(cellFont.Data.Size, out fontSz);
-                                    wsht.Cell(rowNum, colNum).Style.Font.SetFontSize(fontSz);
-                                }
-                                //style
-                                String dataStyle = "";
-                                if (!string.IsNullOrEmpty(cellFont.Data.Style))
-                                {
-                                    dataStyle = cellFont.Data.Style;
-                                }
-                                else
-                                {
-                                    if (_yaml.Defaults.Font.Data != null && _yaml.Defaults.Font.Data.Style != null)
-                                        dataStyle = _yaml.Defaults.Font.Data.Style;
-                                }
-                                if (!String.IsNullOrEmpty(dataStyle))
-                                {
-                                    if (dataStyle == "bold")
-                                    {
-                                        wsht.Cell(rowNum, colNum).Style.Font.SetBold();
-                                    }
-                                    else if (dataStyle == "italic")
-                                    {
-                                        wsht.Cell(rowNum, colNum).Style.Font.SetItalic();
-                                    }
-                                    else if (dataStyle == "underline")
-                                    {
-                                        wsht.Cell(rowNum, colNum).Style.Font.SetUnderline();
-                                    }
-                                }
-                                //conditional-formatting
-
+                                headerStyle = shtFmt.Font.Header.Style;
                             }
-                            #endregion
-                        }    
+                            else
+                            {
+                                headerStyle = _yaml.Defaults.Font.Header.Style;
+                            }
+
+                        }
+                        else if (_yaml.Defaults.Font != null && _yaml.Defaults.Font.Header != null)
+                        {
+                            headerStyle = _yaml.Defaults.Font.Header.Style;
+                        }
+                        if (!String.IsNullOrEmpty(headerStyle))
+                        {
+                            if (headerStyle == "bold")
+                            {
+                                wsht.Cell(rowNum, colNum).Style.Font.SetBold();
+                            }
+                            else if (headerStyle == "italic")
+                            {
+                                wsht.Cell(rowNum, colNum).Style.Font.SetItalic();
+                            }
+                            else if (headerStyle == "underline")
+                            {
+                                wsht.Cell(rowNum, colNum).Style.Font.SetUnderline();
+                            }
+                        }
+                        #endregion
+                        // Populate output column cells
+                        var cellCnt = srcColumn.Cells().Count();
+
+                        for (int i = 2; i <= cellCnt; i++)
+                        {
+                            if (!rowsExcluded.Contains(i))
+                            {
+                                if (String.IsNullOrEmpty(burstColumnName) ||
+                                        (burstColNumber != 0 &&
+                                         ssht.Cell(i, burstColNumber).Value.Equals(burstColumnValue)
+                                        )
+                                    )
+                                {
+                                    rowNum++;
+                                    wsht.Cell(rowNum, colNum).Value = srcColumn.Cell(i).Value;
+                                    #region setdatacellstyle
+                                    xlsxfmt.format.Font cellFont;
+                                    if (colFmt.Font != null && colFmt.Font.Data != null)
+                                        cellFont = colFmt.Font;
+                                    else
+                                        cellFont = shtFmt.Font;
+                                    if (cellFont != null && cellFont.Data != null)
+                                    {
+                                        //size
+                                        if (!String.IsNullOrEmpty(cellFont.Data.Size))
+                                        {
+                                            double fontSz;
+                                            Double.TryParse(cellFont.Data.Size, out fontSz);
+                                            wsht.Cell(rowNum, colNum).Style.Font.SetFontSize(fontSz);
+                                        }
+                                        //style
+                                        String dataStyle = "";
+                                        if (!string.IsNullOrEmpty(cellFont.Data.Style))
+                                        {
+                                            dataStyle = cellFont.Data.Style;
+                                        }
+                                        else
+                                        {
+                                            if (_yaml.Defaults.Font.Data != null && _yaml.Defaults.Font.Data.Style != null)
+                                                dataStyle = _yaml.Defaults.Font.Data.Style;
+                                        }
+                                        if (!String.IsNullOrEmpty(dataStyle))
+                                        {
+                                            if (dataStyle == "bold")
+                                            {
+                                                wsht.Cell(rowNum, colNum).Style.Font.SetBold();
+                                            }
+                                            else if (dataStyle == "italic")
+                                            {
+                                                wsht.Cell(rowNum, colNum).Style.Font.SetItalic();
+                                            }
+                                            else if (dataStyle == "underline")
+                                            {
+                                                wsht.Cell(rowNum, colNum).Style.Font.SetUnderline();
+                                            }
+                                        }
+                                        //conditional-formatting
+
+                                    }
+                                    #endregion
+                                }
+                            }
+                        }
                     }
                 }
-                if (colFmt.hidden == "true")
-                    wsht.Column(colNum).Hide();
+                catch (Exception ex)
+                {
+
+                }
                 numDataRows = rowNum - logoRows - headerRows;
                 Interlocked.Increment(ref colNum);
                 rowNum = startRowNum;
+                if (colFmt.hidden == "true")
+                    wsht.Column(colNum).Hide();
             }
 
             colNum = 1;
             foreach (xlsxfmt.format.Column colFmt in shtFmt.Column)
             {
                 #region column format
-                if (string.IsNullOrEmpty(colFmt.FormatType))
-                    colFmt.FormatType = "GENERAL";
-                var rng = wsht.Range(wsht.Column(colNum).FirstCellUsed().CellBelow(), wsht.Column(colNum).CellsUsed().Last());
-                if (colFmt.FormatType.ToUpper() == "NUMBER")
+                var source = colFmt.Name;
+                if (!string.IsNullOrEmpty(colFmt.Source))
+                    source = colFmt.Source;
+                var srcColumn = ssht.Columns().Where(x => x.Cell(1).Value.ToString()
+                    == source).FirstOrDefault();
+                if (srcColumn != null)
                 {
-                    rng.SetDataType(XLCellValues.Number);
-                    int numDecimalPlaces;
-                    int.TryParse(colFmt.DecimalPlaces, out numDecimalPlaces);
-                    if (numDecimalPlaces == 0)
-                        int.TryParse(_yaml.Defaults.Column.DecimalPlaces, out numDecimalPlaces);
-                    if (numDecimalPlaces != 0)
+                    if (string.IsNullOrEmpty(colFmt.FormatType))
+                        colFmt.FormatType = "GENERAL";
+                    var rng = wsht.Range(wsht.Column(colNum).FirstCellUsed().CellBelow(), wsht.Column(colNum).CellsUsed().Last());
+                    if (colFmt.FormatType.ToUpper() == "NUMBER")
                     {
+                        rng.SetDataType(XLCellValues.Number);
+                        int numDecimalPlaces;
+                        int.TryParse(colFmt.DecimalPlaces, out numDecimalPlaces);
+                        if (numDecimalPlaces == 0)
+                            int.TryParse(_yaml.Defaults.Column.DecimalPlaces, out numDecimalPlaces);
+                        if (numDecimalPlaces != 0)
+                        {
+                            string s = "0.";
+                            s = s.PadRight(numDecimalPlaces + 2, '0');
+                            wsht.Column(colNum).CellsUsed().Style.NumberFormat.Format = s;
+                        }
+                    }
+                    else if (colFmt.FormatType.ToUpper() == "TEXT")
+                    {
+                        rng.SetDataType(XLCellValues.Text);
+                        // wsht.Column(colNum).CellsUsed().SetDataType(XLCellValues.Text);
+                    }
+                    else if (colFmt.FormatType.ToUpper() == "DATE")
+                    {
+                        rng.SetDataType(XLCellValues.DateTime);
+                        //wsht.Column(colNum).CellsUsed().SetDataType(XLCellValues.DateTime);
+                        String dateFormat;
+                        if (!string.IsNullOrEmpty(colFmt.DateFormat))
+                        {
+                            dateFormat = colFmt.DateFormat;
+                        }
+                        else
+                            dateFormat = _yaml.Defaults.Column.DateFormat;
+                        if (!string.IsNullOrEmpty(colFmt.DateFormat))
+                            wsht.Column(colNum).CellsUsed().Style.DateFormat.Format = dateFormat;
+                    }
+                    else if (colFmt.FormatType.ToUpper() == "ACCOUNTING")
+                    {
+                        rng.SetDataType(XLCellValues.Number);
+                        int numDecimalPlaces;
+                        int.TryParse(colFmt.DecimalPlaces, out numDecimalPlaces);
+                        if (numDecimalPlaces == 0)
+                            int.TryParse(_yaml.Defaults.Column.DecimalPlaces, out numDecimalPlaces);
+                        if (numDecimalPlaces == 0) numDecimalPlaces = 2;
                         string s = "0.";
                         s = s.PadRight(numDecimalPlaces + 2, '0');
-                        wsht.Column(colNum).CellsUsed().Style.NumberFormat.Format = s;
+                        rng.Style.NumberFormat.Format = String.Concat("_-[$$-C09]* #,##", s, "_-;\\-[$$-C09]* #,##", s, "_-;_-[$$-C09]* \"-\"??_-;_-@_-");
                     }
-                }
-                else if (colFmt.FormatType.ToUpper() == "TEXT")
-                {
-                    rng.SetDataType(XLCellValues.Text);
-                    // wsht.Column(colNum).CellsUsed().SetDataType(XLCellValues.Text);
-                }
-                else if (colFmt.FormatType.ToUpper() == "DATE")
-                {
-                    rng.SetDataType(XLCellValues.DateTime);
-                    //wsht.Column(colNum).CellsUsed().SetDataType(XLCellValues.DateTime);
-                    String dateFormat;
-                    if (!string.IsNullOrEmpty(colFmt.DateFormat))
+                    if (colFmt.conditionalFormatting != null && colFmt.conditionalFormatting.Type == "databar")
                     {
-                        dateFormat = colFmt.DateFormat;
-                    }
-                    else
-                        dateFormat = _yaml.Defaults.Column.DateFormat;
-                    if (!string.IsNullOrEmpty(colFmt.DateFormat))
-                        wsht.Column(colNum).CellsUsed().Style.DateFormat.Format = dateFormat;
-                }
-                else if (colFmt.FormatType.ToUpper() == "ACCOUNTING")
-                {
-                    rng.SetDataType(XLCellValues.Number);
-                    int numDecimalPlaces;
-                    int.TryParse(colFmt.DecimalPlaces, out numDecimalPlaces);
-                    if (numDecimalPlaces == 0)
-                        int.TryParse(_yaml.Defaults.Column.DecimalPlaces, out numDecimalPlaces);
-                    if (numDecimalPlaces == 0) numDecimalPlaces = 2;
-                    string s = "0.";
-                    s = s.PadRight(numDecimalPlaces + 2, '0');
-                    rng.Style.NumberFormat.Format = String.Concat("_-[$$-C09]* #,##", s, "_-;\\-[$$-C09]* #,##", s, "_-;_-[$$-C09]* \"-\"??_-;_-@_-");
-                }
-                if (colFmt.conditionalFormatting != null && colFmt.conditionalFormatting.Type == "databar")
-                {
-                    //gradient-green, gradient-red, gradient-orange, gradient-ltblue, gradient-purple
-                    if (colFmt.conditionalFormatting.Style == "gradient-ltblue")
-                    {
-                        rng.AddConditionalFormat().DataBar(XLColor.Blue).LowestValue().HighestValue();
-                    }
-                    else if (colFmt.conditionalFormatting.Style == "gradient-green")
-                    {
-                        rng.AddConditionalFormat().DataBar(XLColor.Green).LowestValue().HighestValue(); ;
-                    }
-                    else if (colFmt.conditionalFormatting.Style == "gradient-orange")
-                    {
-                        rng.AddConditionalFormat().DataBar(XLColor.Orange).LowestValue().HighestValue(); ;
-                    }
-                    else if (colFmt.conditionalFormatting.Style == "gradient-purple")
-                    {
-                        rng.AddConditionalFormat().DataBar(XLColor.Purple).LowestValue().HighestValue(); ;
-                    }
-                    else
-                        if (colFmt.conditionalFormatting.Style == "gradient-red")
+                        //gradient-green, gradient-red, gradient-orange, gradient-ltblue, gradient-purple
+                        if (colFmt.conditionalFormatting.Style == "gradient-ltblue")
                         {
-                            rng.AddConditionalFormat().DataBar(XLColor.Red).LowestValue().HighestValue(); ;
+                            rng.AddConditionalFormat().DataBar(XLColor.Blue).LowestValue().HighestValue();
                         }
+                        else if (colFmt.conditionalFormatting.Style == "gradient-green")
+                        {
+                            rng.AddConditionalFormat().DataBar(XLColor.Green).LowestValue().HighestValue(); ;
+                        }
+                        else if (colFmt.conditionalFormatting.Style == "gradient-orange")
+                        {
+                            rng.AddConditionalFormat().DataBar(XLColor.Orange).LowestValue().HighestValue(); ;
+                        }
+                        else if (colFmt.conditionalFormatting.Style == "gradient-purple")
+                        {
+                            rng.AddConditionalFormat().DataBar(XLColor.Purple).LowestValue().HighestValue(); ;
+                        }
+                        else
+                            if (colFmt.conditionalFormatting.Style == "gradient-red")
+                            {
+                                rng.AddConditionalFormat().DataBar(XLColor.Red).LowestValue().HighestValue(); ;
+                            }
+                    }
                 }
                 #endregion
                 colNum++;
@@ -1462,8 +1503,20 @@ namespace xlsxfmt
                         if (!String.IsNullOrEmpty(keys[j]))
                             wsht.Cell(lastRowUsed, lc[j].Number).Value = keys[j];
                     }
-                   
+
                 }
+                // Adding group columns into sort column list
+                foreach (var item in lc)
+                {
+                    if (!shtFmt.Sort.Any(x => x.Column == item.Name))
+                    {
+                        Sort sr = new Sort();
+                        sr.Direction = "";
+                        sr.Column = item.Name;
+                        shtFmt.Sort.Add(sr);
+                    }
+                }
+
             }
 
             //Sorting
@@ -1485,7 +1538,7 @@ namespace xlsxfmt
 
             // At this point we have filled and formatted header data and value cells data
             // Now it's time to add totals and outlines if needed
-            
+
             #region generating totals
             if (groupLevel > 0)
             //if (1==2)
@@ -1650,7 +1703,7 @@ namespace xlsxfmt
                 //wshtTemp.Delete();
             }
             #endregion
-            
+
             #region process topnrows
             if (!String.IsNullOrEmpty(shtFmt.topNRows))
             {
@@ -1665,7 +1718,7 @@ namespace xlsxfmt
                     }
                 }
             }
-            #endregion    
+            #endregion
             #region empty sheet
             if (wsht.IsEmpty())
             {
