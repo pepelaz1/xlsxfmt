@@ -27,19 +27,26 @@ namespace xlsxfmt
 
                     w.Stop();
                     Console.WriteLine("Ok");
-                    Console.WriteLine("Time elapsed: {0}:{1}:{2}:{3}", 
+                    Console.WriteLine("Time elapsed: {0}:{1}:{2}:{3}",
                         w.Elapsed.Hours.ToString("D2"),
                         w.Elapsed.Minutes.ToString("D2"),
                         w.Elapsed.Seconds.ToString("D2"),
                         w.Elapsed.Milliseconds.ToString("D3"));
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
-                if (ex is ArgumentException)
+                if (ex is NullReferenceException)
                 {
-                    printUsage();
+                    Console.WriteLine("Such a generic message is difficult to track down.");
+                }
+                else
+                {
+                    Console.WriteLine(ex.Message);
+                    if (ex is ArgumentException)
+                    {
+                        printUsage();
+                    }
                 }
             }
         }
