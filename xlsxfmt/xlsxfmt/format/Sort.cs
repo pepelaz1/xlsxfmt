@@ -10,5 +10,11 @@ namespace xlsxfmt.format
     {
         public string Column { get; set; }
         public string Direction { get; set; }
+
+       /* public Sort(String col, String direction)
+        {
+            Column = col;
+            Direction = direction;
+        }*/
     }
 }

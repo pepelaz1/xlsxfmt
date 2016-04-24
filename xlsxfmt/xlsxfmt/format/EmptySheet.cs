@@ -11,7 +11,7 @@ namespace xlsxfmt.format
     {
         public String exclude { get; set; }
 
-        [YamlMember(Alias = "default-value")]
-        public String defaultValue { get; set; }
+        [YamlMember(Alias = "default-text")]
+        public String DefaultText { get; set; }
     }
 }

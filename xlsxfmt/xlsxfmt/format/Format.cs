@@ -18,6 +18,7 @@ namespace xlsxfmt.format
        public string OutputFilenameBase { get; set; }
        [YamlMember(Alias = "empty-sheet")]
        public EmptySheet emptySheet { get; set; }
-
+        [YamlMember(Alias = "burst-on-column")]
+       public string BurstOnColumn { get; set; }
     }
 }
