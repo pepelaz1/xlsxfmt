@@ -30,7 +30,7 @@ namespace xlsxfmt
         private string _outputXlsxBase;
         private string _outputXlsxBaseName;
         private string _outputXlsxBaseExt;
-        private List<String> optionKeys = new List<string>(new string[] { "output-filename-prefix", "output-filename-postfix", "grand-total-prefix", "burst-on-column","thread-amount" });
+        private List<String> optionKeys = new List<string>(new string[] { "output-filename-prefix", "output-filename-postfix", "grand-total-prefix", "burst-on-column","max-thread-amount" });
         private Dictionary<string, string> _options = new Dictionary<string, string>();
         private Dictionary<int, string> _aggregateFunctions = new Dictionary<int, string>();
         private Dictionary<String, int> _moveTotalSheets = new Dictionary<string, int>();
@@ -47,9 +47,9 @@ namespace xlsxfmt
         private float _logoDpiY;
         private float _logoHorizontalResolution;
         private float _logoVerticalResolution;
-        private int _threadAmount;
-        private int _defaultThreadAmount = 3;
-        private string _threadNumberOptionName = "thread-amount";
+        private int _maxThreadAmount;
+        private int _defaultMaxThreadAmount = 3;
+        private string _maxThreadNumberOptionName = "max-thread-amount";
 
         public void ValidateArguments()
         {
@@ -532,17 +532,17 @@ namespace xlsxfmt
             else
                 burstColumnName = _yaml.Format.BurstOnColumn;
 
-            if (_options.ContainsKey(_threadNumberOptionName))
+            if (_options.ContainsKey(_maxThreadNumberOptionName))
             {
-                Int32.TryParse(_options[_threadNumberOptionName], out _threadAmount);
-                if (_threadAmount <= 0)
+                Int32.TryParse(_options[_maxThreadNumberOptionName], out _maxThreadAmount);
+                if (_maxThreadAmount <= 0)
                 {
-                    _threadAmount = _defaultThreadAmount;
-                    Console.WriteLine("Specified thread number is invalid and was ignored. Number of threads was set to " + _defaultThreadAmount);
+                    _maxThreadAmount = _defaultMaxThreadAmount;
+                    Console.WriteLine("Specified max thread number is invalid and was ignored. Max number of threads was set to " + _defaultMaxThreadAmount);
                 }
             }
             else
-                _threadAmount = _defaultThreadAmount;
+                _maxThreadAmount = _defaultMaxThreadAmount;
 
             if (!String.IsNullOrEmpty(burstColumnName))
             {
@@ -586,7 +586,7 @@ namespace xlsxfmt
 
             using (ManualResetEvent e = new ManualResetEvent(false))
             {
-                ThreadPool.SetMaxThreads(_threadAmount, _threadAmount);
+                ThreadPool.SetMaxThreads(_maxThreadAmount, _maxThreadAmount);
                 foreach (var item in outputs)
                 {
                     ThreadPool.QueueUserWorkItem(new WaitCallback(x =>

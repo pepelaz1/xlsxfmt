@@ -16,6 +16,7 @@ namespace xlsxfmt.Test
                 @"--output-filename-postfix=_outpost_",
                 @"--grand-total-prefix=""General Medical System""",
                 @"--burst-on-column=Facility",
+                @"--max-thread-amount=2",
                 @"examples\overriden output.xlsx",
             });
 
