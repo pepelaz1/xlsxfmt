@@ -573,7 +573,7 @@ namespace xlsxfmt
             {
                 foreach (var item in outputs)
                 {
-                    ThreadPool.SetMaxThreads(3,3);
+                    //ThreadPool.SetMaxThreads(3,3);
                     ThreadPool.QueueUserWorkItem(new WaitCallback(x =>
                     {
                         //XLWorkbook src = sourceWorkbook;
