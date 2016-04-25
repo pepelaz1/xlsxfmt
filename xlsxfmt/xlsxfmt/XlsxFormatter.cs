@@ -30,7 +30,7 @@ namespace xlsxfmt
         private string _outputXlsxBase;
         private string _outputXlsxBaseName;
         private string _outputXlsxBaseExt;
-        private List<String> optionKeys = new List<string>(new string[] { "output-filename-prefix", "output-filename-postfix", "grand-total-prefix", "burst-on-column" });
+        private List<String> optionKeys = new List<string>(new string[] { "output-filename-prefix", "output-filename-postfix", "grand-total-prefix", "burst-on-column","thread-amount" });
         private Dictionary<string, string> _options = new Dictionary<string, string>();
         private Dictionary<int, string> _aggregateFunctions = new Dictionary<int, string>();
         private Dictionary<String, int> _moveTotalSheets = new Dictionary<string, int>();
@@ -47,6 +47,9 @@ namespace xlsxfmt
         private float _logoDpiY;
         private float _logoHorizontalResolution;
         private float _logoVerticalResolution;
+        private int _threadAmount;
+        private int _defaultThreadAmount = 3;
+        private string _threadNumberOptionName = "thread-amount";
 
         public void ValidateArguments()
         {
@@ -529,6 +532,18 @@ namespace xlsxfmt
             else
                 burstColumnName = _yaml.Format.BurstOnColumn;
 
+            if (_options.ContainsKey(_threadNumberOptionName))
+            {
+                Int32.TryParse(_options[_threadNumberOptionName], out _threadAmount);
+                if (_threadAmount <= 0)
+                {
+                    _threadAmount = _defaultThreadAmount;
+                    Console.WriteLine("Specified thread number is invalid and was ignored. Number of threads was set to " + _defaultThreadAmount);
+                }
+            }
+            else
+                _threadAmount = _defaultThreadAmount;
+
             if (!String.IsNullOrEmpty(burstColumnName))
             {
                 burstColumnValues = GetBurstColumnValues(sourceWorkbook, burstColumnName);
@@ -571,9 +586,9 @@ namespace xlsxfmt
 
             using (ManualResetEvent e = new ManualResetEvent(false))
             {
+                ThreadPool.SetMaxThreads(_threadAmount, _threadAmount);
                 foreach (var item in outputs)
                 {
-                    //ThreadPool.SetMaxThreads(3,3);
                     ThreadPool.QueueUserWorkItem(new WaitCallback(x =>
                     {
                         //XLWorkbook src = sourceWorkbook;
