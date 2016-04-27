@@ -35,7 +35,7 @@ namespace xlsxfmt
         private Dictionary<string, string> _options = new Dictionary<string, string>();
         private Dictionary<int, string> _aggregateFunctions = new Dictionary<int, string>();
         private Dictionary<String, int> _moveTotalSheets = new Dictionary<string, int>();
-        private ResourceManager _errors;
+        //private ResourceManager ErrorMessages.ResourceManager;
         private List<String> _logoSheets = new List<string>();
         private string _delimiter = "~";
         private string _calcModeInternal = "internal";
@@ -513,7 +513,7 @@ namespace xlsxfmt
             }
             else
             {
-                Console.WriteLine(String.Format(_errors.GetString("NoSheets"), outputFileName));
+                Console.WriteLine(String.Format(ErrorMessages.ResourceManager.GetString("NoSheets"), outputFileName));
             }
             //  }
             // catch (Exception ex)
@@ -526,29 +526,32 @@ namespace xlsxfmt
         {
             int numErrors = 0;
             foreach(format.Sheet sheet in _yaml.Sheet){
-                if (String.IsNullOrEmpty(sheet.Source))
+                var shtSource = sheet.Name;
+                if (!string.IsNullOrEmpty(sheet.Source))
+                    shtSource = sheet.Source;
+                if (String.IsNullOrEmpty(shtSource))
                 {
-                    Console.WriteLine(String.Format(_errors.GetString("NullSheetSource"), sheet.Name));
+                    Console.WriteLine(String.Format(ErrorMessages.ResourceManager.GetString("NullSheetSource"), sheet.Name));
                     numErrors++;
                 }
                 else
                 {
-                    var ssht = wsrc.Worksheets.Where(x => x.Name == sheet.Name).FirstOrDefault();
+                    var ssht = wsrc.Worksheets.Where(x => x.Name == shtSource).FirstOrDefault();
                     if (ssht == null)
                     {
-                        Console.WriteLine(String.Format(_errors.GetString("NullSheetSource"), sheet.Name));
+                        Console.WriteLine(String.Format(ErrorMessages.ResourceManager.GetString("NullSheetSource"), shtSource));
                         numErrors++;
                     }
                     else
                     {
                         foreach (format.Column col in sheet.Column)
                         {
-                            string source = "";
+                            string source = col.Name;
                             if (!string.IsNullOrEmpty(col.Source))
                                 source = col.Source;
                             if (String.IsNullOrEmpty(source))
                             {
-                                Console.WriteLine(String.Format(_errors.GetString("NullColumnSource"), col.Name, sheet.Name));
+                                Console.WriteLine(String.Format(ErrorMessages.ResourceManager.GetString("NullColumnSource"), col.Name, sheet.Name));
                                 numErrors++;
                             }
                             else
@@ -556,7 +559,7 @@ namespace xlsxfmt
                                 var srcCol = ssht.Columns().Where(x => x.Cell(1).Value.ToString() == source).FirstOrDefault();
                                 if (srcCol == null)
                                 {
-                                    Console.WriteLine(String.Format(_errors.GetString("NullColumnSource"), col.Name, sheet.Name));
+                                    Console.WriteLine(String.Format(ErrorMessages.ResourceManager.GetString("NullColumnSource"), col.Name, sheet.Name));
                                     numErrors++;
                                 }
                             }
@@ -567,7 +570,7 @@ namespace xlsxfmt
             }
             if (numErrors > 0)
             {
-                throw new Exception(_errors.GetString("FormatFileError"));
+                throw new Exception(ErrorMessages.ResourceManager.GetString("FormatFileError"));
             }
         }
 
@@ -580,7 +583,7 @@ namespace xlsxfmt
 
             // Read source workbook
             var sourceWorkbook = new XLWorkbook(_sourceXlsx);
-            _errors = new ResourceManager("ErrorMessages", Assembly.GetExecutingAssembly());
+            //ErrorMessages.ResourceManager = new ResourceManager("ErrorMessages", Assembly.GetExecutingAssembly());
             ValidateFormatFile(sourceWorkbook);
 
             bool needBursting = false;
