@@ -567,7 +567,7 @@ namespace xlsxfmt
             }
             if (numErrors > 0)
             {
-                throw new System.ArgumentException(_errors.GetString("FormatFileError"));
+                throw new Exception(_errors.GetString("FormatFileError"));
             }
         }
 

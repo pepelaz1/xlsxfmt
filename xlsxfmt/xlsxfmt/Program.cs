@@ -36,18 +36,18 @@ namespace xlsxfmt
             }
             catch (Exception ex)
             {
-                if (ex is NullReferenceException)
+                /*if (ex is NullReferenceException)
                 {
                     Console.WriteLine("Such a generic message is difficult to track down.");
                 }
                 else
-                {
+                {*/
                     Console.WriteLine(ex.Message);
                     if (ex is ArgumentException)
                     {
                         printUsage();
                     }
-                }
+               /* }*/
             }
         }
 
