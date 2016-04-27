@@ -11,13 +11,13 @@ namespace xlsxfmt.Test
         {
             var xf = new XlsxFormatter( new string[] {
                 @"examples\test input4.xlsx",
-                @"examples\splitRxTestFormat.yaml",
+                @"examples\splitRxTestFormat1.yaml",
                 @"--output-filename-prefix=_outpref_",
                 @"--output-filename-postfix=_outpost_",
                 @"--grand-total-prefix=""General Medical System""",
-                @"--burst-on-column=Facility",
-                @"--max-thread-amount=2",
-                @"examples\overriden output.xlsx",
+              /*  @"--burst-on-column=Building",*/
+                @"--max-thread-amount=2"/*,
+                @"examples\overriden output.xlsx",*/
             });
 
             xf.Process();

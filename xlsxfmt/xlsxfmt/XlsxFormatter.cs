@@ -20,6 +20,7 @@ using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 using DocumentFormat.OpenXml.Validation;
 using System.Threading;
+using System.Resources;
 
 namespace xlsxfmt
 {
@@ -34,6 +35,7 @@ namespace xlsxfmt
         private Dictionary<string, string> _options = new Dictionary<string, string>();
         private Dictionary<int, string> _aggregateFunctions = new Dictionary<int, string>();
         private Dictionary<String, int> _moveTotalSheets = new Dictionary<string, int>();
+        private ResourceManager _errors;
         private List<String> _logoSheets = new List<string>();
         private string _delimiter = "~";
         private string _calcModeInternal = "internal";
@@ -365,7 +367,7 @@ namespace xlsxfmt
             Stream logoStream = null;
             try
             {
-                Uri uri = new Uri(logoPath);
+                Uri uri = new Uri(logoPath, UriKind.Absolute);
                 logoStream = new FileStream(uri.AbsolutePath, FileMode.Open, FileAccess.Read, FileShare.Read);
                 Image logo = Image.FromStream(logoStream);
                 _logoHeight = logo.Height;
@@ -495,17 +497,78 @@ namespace xlsxfmt
             // try
             //{
             // Construct output workbook using source workbook and input params
+            Console.WriteLine("Thread " + Thread.CurrentThread.ManagedThreadId + " started processing at " + System.DateTime.Now);
+
             Construct(sourceWorkbook, outputWorkbook, needLogoUsage, burstColumnName, burstColumnValue);
 
-            // Save output file
-            outputWorkbook.SaveAs(outputFileName);
+            Console.WriteLine("Thread " + Thread.CurrentThread.ManagedThreadId + " finished processing at " + System.DateTime.Now);
 
-            AddImageAndPaneMove(outputFileName, needLogoUsage, needMoveTotalColumn);
+            // Save output file
+            if (outputWorkbook.Worksheets.Count > 0)
+            {
+                outputWorkbook.SaveAs(outputFileName);
+                Console.WriteLine("Thread " + Thread.CurrentThread.ManagedThreadId + " started processing image insert and column moving at " + System.DateTime.Now);
+                AddImageAndPaneMove(outputFileName, needLogoUsage, needMoveTotalColumn);
+                Console.WriteLine("Thread " + Thread.CurrentThread.ManagedThreadId + " finished processing image insert and column moving at " + System.DateTime.Now);
+            }
+            else
+            {
+                Console.WriteLine(String.Format(_errors.GetString("NoSheets"), outputFileName));
+            }
             //  }
             // catch (Exception ex)
             //{
             //    Console.WriteLine(ex.Message);
             // }
+        }
+
+        public void ValidateFormatFile(XLWorkbook wsrc)
+        {
+            int numErrors = 0;
+            foreach(format.Sheet sheet in _yaml.Sheet){
+                if (String.IsNullOrEmpty(sheet.Source))
+                {
+                    Console.WriteLine(String.Format(_errors.GetString("NullSheetSource"), sheet.Name));
+                    numErrors++;
+                }
+                else
+                {
+                    var ssht = wsrc.Worksheets.Where(x => x.Name == sheet.Name).FirstOrDefault();
+                    if (ssht == null)
+                    {
+                        Console.WriteLine(String.Format(_errors.GetString("NullSheetSource"), sheet.Name));
+                        numErrors++;
+                    }
+                    else
+                    {
+                        foreach (format.Column col in sheet.Column)
+                        {
+                            string source = "";
+                            if (!string.IsNullOrEmpty(col.Source))
+                                source = col.Source;
+                            if (String.IsNullOrEmpty(source))
+                            {
+                                Console.WriteLine(String.Format(_errors.GetString("NullColumnSource"), col.Name, sheet.Name));
+                                numErrors++;
+                            }
+                            else
+                            {
+                                var srcCol = ssht.Columns().Where(x => x.Cell(1).Value.ToString() == source).FirstOrDefault();
+                                if (srcCol == null)
+                                {
+                                    Console.WriteLine(String.Format(_errors.GetString("NullColumnSource"), col.Name, sheet.Name));
+                                    numErrors++;
+                                }
+                            }
+
+                        }
+                    }
+                }
+            }
+            if (numErrors > 0)
+            {
+                throw new System.ArgumentException(_errors.GetString("FormatFileError"));
+            }
         }
 
         public void Process()
@@ -515,10 +578,10 @@ namespace xlsxfmt
             var formatDeserializer = new Deserializer(namingConvention: new CamelCaseNamingConvention(), ignoreUnmatched: true);
             _yaml = formatDeserializer.Deserialize<YamlFile>(formatReader);
 
-            //DeserializeStopValues();
-
             // Read source workbook
             var sourceWorkbook = new XLWorkbook(_sourceXlsx);
+            _errors = new ResourceManager("ErrorMessages", Assembly.GetExecutingAssembly());
+            ValidateFormatFile(sourceWorkbook);
 
             bool needBursting = false;
             int numOutputBooks = 1;
@@ -571,7 +634,6 @@ namespace xlsxfmt
             Dictionary<String, KeyValuePair<String, XLWorkbook>> outputs = new Dictionary<string, KeyValuePair<String, XLWorkbook>>();
             if (needBursting)
             {
-                burstColumnName = _options[_burstOnColumn];
                 foreach (var item in burstColumnValues)
                 {
                     String outputFileName = ConstructOutputFilename(item);
@@ -617,15 +679,19 @@ namespace xlsxfmt
             {
                 result = _yaml.Format.OutputFilenameBase;
 
+                if (burstColumnValue != null)
+                {
+                    result = burstColumnValue + result;
+                }
+
                 var fileName = Path.GetFileName(result);
 
                 if (_options.ContainsKey(@"output-filename-prefix"))
-                    fileName = _options[@"output-filename-prefix"] + fileName;
-
-                if (burstColumnValue != null)
                 {
-                    fileName = fileName + burstColumnValue;
+                    fileName = _options[@"output-filename-prefix"] + fileName;
                 }
+
+                
 
                 if (_options.ContainsKey(@"output-filename-postfix"))
                     fileName = fileName + _options[@"output-filename-postfix"];
@@ -657,7 +723,11 @@ namespace xlsxfmt
                 // Find source sheet in source workbook
                 var ssht = wsrc.Worksheets.Where(x => x.Name == source).FirstOrDefault();
                 if (ssht != null)
+                {
+                    Console.WriteLine("Thread " + Thread.CurrentThread.ManagedThreadId + " started constructing sheet " + source + " at " + System.DateTime.Now);
                     ConstructSheet(ssht, wout, shtFmt, needLogoUsage, burstColumnName, burstColumnValue);
+                    Console.WriteLine("Thread " + Thread.CurrentThread.ManagedThreadId + " finished constructing sheet " + source + " at " + System.DateTime.Now);
+                }
                 //}
             }
         }
@@ -1479,6 +1549,7 @@ namespace xlsxfmt
             var tableRange = wsht.Range(wsht.FirstCellUsed().CellBelow(), wsht.Row(lastRowUsed).LastCellUsed());
             if (groupLevel > 0 && numDataRows > 0)
             {
+                Console.WriteLine("Thread " + Thread.CurrentThread.ManagedThreadId + " started preparing for grouping in sheet " + shtFmt.Name + " at " + System.DateTime.Now);
                 int rowCnt = tableRange.RowCount();
                 List<SortKeyLevel> totalKeys = new List<SortKeyLevel>();
                 List<int> totalLevels = new List<int>();
@@ -1531,11 +1602,13 @@ namespace xlsxfmt
                         shtFmt.Sort.Add(sr);
                     }
                 }
+                Console.WriteLine("Thread " + Thread.CurrentThread.ManagedThreadId + " finished preparing for grouping in sheet " + shtFmt.Name + " at " + System.DateTime.Now);
 
             }
-
+            
             if (shtFmt.Sort != null && shtFmt.Sort.Count > 0 && numDataRows > 0)
             {
+                Console.WriteLine("Thread " + Thread.CurrentThread.ManagedThreadId + " started sorting sheet " + shtFmt.Name + " at " + System.DateTime.Now);
                 //Sorting
                 var fcu = wsht.FirstCellUsed();
                 var lcu = wsht.LastCellUsed();
@@ -1548,6 +1621,7 @@ namespace xlsxfmt
                         tableRange.SortColumns.Add(sortColNumber);
                 }
                 tableSortRange.Sort();
+                Console.WriteLine("Thread " + Thread.CurrentThread.ManagedThreadId + " finished sorting sheet " + shtFmt.Name + " at " + System.DateTime.Now);
             }
 
             GC.Collect();
@@ -1560,6 +1634,7 @@ namespace xlsxfmt
             //if (1==2)
             {
                 //IXLWorksheet wshtTemp = wout.AddWorksheet("Temp");
+                Console.WriteLine("Thread " + Thread.CurrentThread.ManagedThreadId + " started generating totals in sheet " + shtFmt.Name + " at " + System.DateTime.Now);
                 Dictionary<int, List<RowsRange>> groupRanges = new Dictionary<int, List<RowsRange>>();
                 var dict = new Dictionary<String, double>();
 
@@ -1718,22 +1793,26 @@ namespace xlsxfmt
                 wsht.Column(sortColNumber).Clear();
                 //wshtTemp.Delete();
                 elements = null;
+                Console.WriteLine("Thread " + Thread.CurrentThread.ManagedThreadId + " finished generating totals in sheet " + shtFmt.Name + " at " + System.DateTime.Now);
             }
             #endregion
             
             #region process topnrows
             if (!String.IsNullOrEmpty(shtFmt.topNRows))
             {
-                //wsht.Range("A2:M100").Delete(XLShiftDeletedCells.ShiftCellsUp);
+                
                 int topRows = 0;
                 Int32.TryParse(shtFmt.topNRows, out topRows);
                 if (topRows > 0 && topRows <= lastRowUsed)
                 {
+                    Console.WriteLine("Thread " + Thread.CurrentThread.ManagedThreadId + " started processing top-n-rows in sheet " + shtFmt.Name + " at " + System.DateTime.Now);
                     for (int i = topRows + 1; i <= lastRowUsed; i++)
                     {
                         wsht.Row(i).Delete();
                     }
+                    Console.WriteLine("Thread " + Thread.CurrentThread.ManagedThreadId + " finished processing top-n-rows in sheet " + shtFmt.Name + " at " + System.DateTime.Now);
                 }
+
             }
             #endregion
             
@@ -1755,7 +1834,9 @@ namespace xlsxfmt
             }
             #endregion
             // Adjust columns width
+            Console.WriteLine("Thread " + Thread.CurrentThread.ManagedThreadId + " started adjusting columns to content in sheet " + shtFmt.Name + " at " + System.DateTime.Now);
             wsht.Columns().AdjustToContents();
+            Console.WriteLine("Thread " + Thread.CurrentThread.ManagedThreadId + " finished adjusting columns to content in sheet " + shtFmt.Name + " at " + System.DateTime.Now);
             colNum = 1;
             foreach (xlsxfmt.format.Column colFmt in shtFmt.Column)
             {
