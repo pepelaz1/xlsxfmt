@@ -28,6 +28,8 @@ namespace xlsxfmt.format
         public String calculationMode { get; set; }
         [YamlMember(Alias = "stop-values")]
         public List<StopValue> stopValues { get; set; }
+        [YamlMember(Alias = "required-values")]
+        public List<RequiredValue> requiredValues { get; set; }
         public String hidden { get; set; }
 
 

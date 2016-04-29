@@ -88,6 +88,7 @@
     <Compile Include="format\Footer.cs" />
     <Compile Include="format\Format.cs" />
     <Compile Include="format\Header.cs" />
+    <Compile Include="format\RequiredValue.cs" />
     <Compile Include="format\Sheet.cs" />
     <Compile Include="format\Sort.cs" />
     <Compile Include="format\StopValue.cs" />
@@ -112,6 +113,9 @@
     </Content>
     <None Include="examples\splitRxTestFormat.yaml" />
     <None Include="examples\splitRxTestFormat1.yaml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="examples\testFormat1.yaml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Include="packages.config" />

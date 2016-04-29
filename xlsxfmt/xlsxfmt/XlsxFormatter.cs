@@ -1188,6 +1188,28 @@ namespace xlsxfmt
             }
             return excludedRows;
         }
+        private List<int> GetIncludedRows(IXLWorksheet sourceSheet, xlsxfmt.format.Sheet shtFmt)
+        {
+            List<int> includedRows = new List<int>();
+            foreach (var col in shtFmt.Column.Where(x => x.requiredValues != null && x.requiredValues.Count != 0))
+            {
+                var srcColumn = sourceSheet.Columns().Where(x => x.Cell(1).Value.ToString()
+                    == col.Name).FirstOrDefault();
+                if (srcColumn != null)
+                {
+                    var cellCnt = srcColumn.Cells().Count();
+                    for (int i = 2; i <= cellCnt; i++)
+                    {
+                        String v = srcColumn.Cell(i).Value.ToString();
+                        if (col.requiredValues.Any(x => x.requiredValue == v) && !includedRows.Contains(i))
+                        {
+                            includedRows.Add(i);
+                        }
+                    }
+                }
+            }
+            return includedRows;
+        }
 
         private void ConstructSheet(IXLWorksheet ssht, XLWorkbook wout, xlsxfmt.format.Sheet shtFmt, bool needLogoUsage, String burstColumnName, String burstColumnValue)
         {
@@ -1218,6 +1240,7 @@ namespace xlsxfmt
 
             bool logoInserted = false;
             List<int> rowsExcluded = GetExcludedRows(ssht, shtFmt);
+            List<int> rowsIncluded = GetIncludedRows(ssht, shtFmt);
             int burstColNumber = 0;
             if (!String.IsNullOrEmpty(burstColumnName))
             {
@@ -1379,7 +1402,7 @@ namespace xlsxfmt
 
                     for (int i = 2; i <= cellCnt; i++)
                     {
-                        if (!rowsExcluded.Contains(i))
+                        if (!rowsExcluded.Contains(i) && (rowsIncluded.Count == 0 || rowsIncluded.Contains(i)))
                         {
                             if (String.IsNullOrEmpty(burstColumnName) ||
                                     (burstColNumber != 0 &&
@@ -1450,6 +1473,8 @@ namespace xlsxfmt
                 if (colFmt.hidden == "true")
                     wsht.Column(colNum).Hide();
             }
+            rowsExcluded = null;
+            rowsIncluded = null;
             #endregion
             colNum = 1;
             foreach (xlsxfmt.format.Column colFmt in shtFmt.Column)
