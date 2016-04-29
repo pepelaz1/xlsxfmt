@@ -90,6 +90,9 @@ List of one or more sheets to be created in the output file. Sheets will appear 
 	* Defaults to the same as **name**
 * **stop-values**
 	* List of one of more values which, if equal to the value of a cell in this column, will result in that row being excluded from the output. These exclusions shall be processed before any formatting, grouping, totaling, or formulas are added. 
+* **required-values**
+	* Only rows from the input which contain one of the values in the supplied list for this column shall be included in the output. This shall be processed before any formatting, grouping, totaling, or formulas are added.
+	* This list of values may include both strings and numbers. 
 * **width**
 	* permitted values: "auto" or numeric
 	* default: auto
