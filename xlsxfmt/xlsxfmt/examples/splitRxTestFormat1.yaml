@@ -30,7 +30,7 @@ sheet:
     sort:
       - column: TotalCost
         direction: descending
-    # top-n-rows: 50
+    top-n-rows: 50
     column:
       - name: Facility
       - name: MfgName

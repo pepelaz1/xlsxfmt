@@ -96,7 +96,11 @@
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RowsRange.cs" />
-    <Compile Include="SortKeyLevel.cs" />
+    <Compile Include="sorting\CellValue.cs" />
+    <Compile Include="sorting\FormatOrder.cs" />
+    <Compile Include="sorting\SortKeyLevel.cs" />
+    <Compile Include="sorting\SortRow.cs" />
+    <Compile Include="sorting\SortRows.cs" />
     <Compile Include="XlsxFormatter.cs" />
     <Compile Include="format\YamlFile.cs" />
   </ItemGroup>
@@ -115,11 +119,17 @@
     <None Include="examples\splitRxTestFormat1.yaml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Include="examples\splitRxTestFormat2.yaml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Include="examples\testFormat1.yaml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Include="packages.config" />
     <Content Include="examples\test input4.xlsx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="examples\test input5.xlsx">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="examples\testFormat.yaml">

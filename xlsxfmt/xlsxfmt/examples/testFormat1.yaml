@@ -26,6 +26,7 @@ sheet:
     source: locDetail
     include-logo: true
     freeze-on-cell: D2
+    top-n-rows: 10
     sort:
       - column: Building
       - column: Room
@@ -72,8 +73,8 @@ sheet:
       - name: PurchCost
         format-type: ACCOUNTING
       - name: PurchMultiple
-        required-values:
-          - required-value: 6 
+        #required-values:
+        #  - required-value: 6 
         format-type: NUMBER
         decimal-places: 0
       - name: UnitCost
