@@ -1616,6 +1616,8 @@ namespace xlsxfmt
             }
             rowsExcluded = null;
             rowsIncluded = null;
+            rowsSortedNeeded.Clear();
+            GC.Collect();
             #endregion
             colNum = 1;
             foreach (xlsxfmt.format.Column colFmt in shtFmt.Column)
