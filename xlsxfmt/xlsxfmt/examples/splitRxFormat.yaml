@@ -1,0 +1,319 @@
+format:
+  name: Multi Facility RX
+  description: Multi Facility RX
+  version: 3
+  logo-path: file:///C:/references/logo.png
+  output-filename-base: " FINAL Reports"
+  empty-sheet:
+    default-text: NOTHING TO REPORT
+  burst-on-column: Facility
+
+defaults:
+  sheet:
+    freeze-on-cell: A2
+    header-row-bgcolor: aaaaaa
+    grand-total-row-bgcolor: ddbb88
+    totals-calculation-mode: formula
+  column:
+    decimal-places: 2
+  font:
+    family: Calibri
+    size: 11
+    header:
+      style: bold
+    footer:
+      style: bold
+
+sheet:
+  - name: Your BIG50 Items
+    source: item
+    sort:
+      - column: TotalCost
+        direction: descending
+    top-n-rows: 50
+    column:
+      - name: Facility
+      - name: MfgName
+        width: 20
+      - name: PrimeVendorCode
+        format-type: TEXT
+      - name: NDC/UPC/HRI
+        format-type: TEXT
+      - name: Description
+        width: 75
+      - name: PackCount
+        format-type: NUMBER
+        conditional-formatting:
+          type: databar
+          style: gradient-orange
+      - name: PackUM
+      - name: PackCost
+        format-type: ACCOUNTING
+      - name: Units/Pack
+        format-type: NUMBER
+      - name: UnitCount
+        format-type: NUMBER
+      - name: Unit
+      - name: UnitCost
+        format-type: ACCOUNTING
+        decimal-places: 4
+      - name: TotalCost
+        format-type: ACCOUNTING
+        conditional-formatting:
+          type: databar
+          style: gradient-green
+      - name: Pricing
+      - name: CostSRC
+        stop-values:
+          - stop-value: "NVT(NON-VERIFIED TOTAL)"
+      - name: OTC
+      - name: DEAsched
+      - name: BIGitemInstanceId
+  - name: Location Detail
+    source: loc
+    include-logo: true
+    freeze-on-cell: D2
+    sort:
+      - column: Dept/Zone
+      - column: Room/Section
+      - column: Location
+      - column: BLID/Area
+      - column: CountOrder
+    column:
+      - name: Facility
+      - name: Dept/Zone
+        subtotal:
+          group: true
+          total-row-bgcolor: 77ddbb
+        font:
+          data:
+            size: 8
+      - name: Room/Section
+        subtotal:
+          group: true
+          total-row-bgcolor: aacccc
+        font:
+          data:
+            size: 8
+      - name: Location
+        subtotal:
+          group: true
+          total-row-bgcolor: 99eecc
+        font:
+          data:
+            size: 8
+      - name: BLID/Area
+      - name: MfgName
+        width: 20
+      - name: PrimeVendorCode
+        format-type: TEXT
+      - name: NDC/UPC/HRI
+        format-type: TEXT
+      - name: Description
+        width: 75
+      - name: PackCount
+        format-type: NUMBER
+      - name: PackUM
+      - name: PackCost
+        format-type: ACCOUNTING
+      - name: Units/Pack
+        format-type: NUMBER
+      - name: UnitCount
+        format-type: NUMBER
+      - name: Unit
+      - name: UnitCost
+        format-type: ACCOUNTING
+        decimal-places: 4
+      - name: TotalCost
+        format-type: ACCOUNTING
+        subtotal:
+          function: 9
+      - name: Pricing
+      - name: CostSRC
+      - name: OTC
+      - name: DEAsched
+      - name: BIGcountId
+      - name: CountOrder
+      - name: BIGitemInstanceId
+  - name: Item Summary
+    source: item
+    sort:
+      - column: NDC/UPC/HRI
+    column:
+      - name: Facility
+      - name: MfgName
+        width: 20
+      - name: PrimeVendorCode
+        format-type: TEXT
+      - name: NDC/UPC/HRI
+        format-type: TEXT
+      - name: Description
+        width: 75
+      - name: PackCount
+        format-type: NUMBER
+      - name: PackUM
+      - name: PackCost
+        format-type: ACCOUNTING
+      - name: Units/Pack
+        format-type: NUMBER
+      - name: UnitCount
+        format-type: NUMBER
+      - name: Unit
+      - name: UnitCost
+        format-type: ACCOUNTING
+        decimal-places: 4
+      - name: TotalCost
+        format-type: ACCOUNTING
+      - name: Pricing
+      - name: CostSRC
+      - name: OTC
+      - name: DEAsched
+      - name: BIGitemInstanceId
+  - name: Unpriced UDI Items
+    source: udi
+    sort:
+      - column: NDC/UPC/HRI
+    column:
+      - name: Facility
+      - name: MfgName
+        width: 20
+      - name: PrimeVendorCode
+        format-type: TEXT
+      - name: NDC/UPC/HRI
+        format-type: TEXT
+      - name: Description
+        width: 75
+      - name: PackCount
+        format-type: NUMBER
+      - name: PackUM
+      - name: PackCost
+        format-type: ACCOUNTING
+        required-values:
+          - required-value: 0
+      - name: Units/Pack
+        format-type: NUMBER
+      - name: UnitCount
+        format-type: NUMBER
+      - name: Unit
+      - name: UnitCost
+        format-type: ACCOUNTING
+        decimal-places: 4
+      - name: TotalCost
+        format-type: ACCOUNTING
+      - name: Pricing
+      - name: CostSRC
+      - name: OTC
+      - name: DEAsched
+      - name: BIGitemInstanceId
+  - name: BIG Priced Items
+    source: big
+    sort:
+      - column: NDC/UPC/HRI
+    column:
+      - name: Facility
+      - name: MfgName
+        width: 20
+      - name: PrimeVendorCode
+        format-type: TEXT
+      - name: NDC/UPC/HRI
+        format-type: TEXT
+      - name: Description
+        width: 75
+      - name: PackCount
+        format-type: NUMBER
+      - name: PackUM
+      - name: PackCost
+        format-type: ACCOUNTING
+      - name: Units/Pack
+        format-type: NUMBER
+      - name: UnitCount
+        format-type: NUMBER
+      - name: Unit
+      - name: UnitCost
+        format-type: ACCOUNTING
+        decimal-places: 4
+      - name: TotalCost
+        format-type: ACCOUNTING
+      - name: Pricing
+      - name: CostSRC
+        required-values:
+          - required-value: BIG(AWP -18%)
+          - required-value: BIG(WAC -18%)
+      - name: OTC
+      - name: DEAsched
+      - name: BIGitemInstanceId
+  - name: Controlled Substances
+    source: controls
+    sort:
+      - column: NDC/UPC/HRI
+    column:
+      - name: Facility
+      - name: MfgName
+        width: 20
+      - name: PrimeVendorCode
+        format-type: TEXT
+      - name: NDC/UPC/HRI
+        format-type: TEXT
+      - name: Description
+        width: 75
+      - name: PackCount
+        format-type: NUMBER
+      - name: PackUM
+      - name: PackCost
+        format-type: ACCOUNTING
+      - name: Units/Pack
+        format-type: NUMBER
+      - name: UnitCount
+        format-type: NUMBER
+      - name: Unit
+      - name: UnitCost
+        format-type: ACCOUNTING
+        decimal-places: 4
+      - name: TotalCost
+        format-type: ACCOUNTING
+      - name: Pricing
+      - name: CostSRC
+      - name: OTC
+      - name: DEAsched
+        # required-values:
+          # - required-value: 2
+          # - required-value: 3
+          # - required-value: 4
+          # - required-value: 5
+      - name: BIGitemInstanceId
+  - name: OTC Items
+    source: otc
+    sort:
+      - column: NDC/UPC/HRI
+    column:
+      - name: Facility
+      - name: MfgName
+        width: 20
+      - name: PrimeVendorCode
+        format-type: TEXT
+      - name: NDC/UPC/HRI
+        format-type: TEXT
+      - name: Description
+        width: 75
+      - name: PackCount
+        format-type: NUMBER
+      - name: PackUM
+      - name: PackCost
+        format-type: ACCOUNTING
+      - name: Units/Pack
+        format-type: NUMBER
+      - name: UnitCount
+        format-type: NUMBER
+      - name: Unit
+      - name: UnitCost
+        format-type: ACCOUNTING
+        decimal-places: 4
+      - name: TotalCost
+        format-type: ACCOUNTING
+      - name: Pricing
+      - name: CostSRC
+      - name: OTC
+        # required-values:
+          # - required-value: X
+      - name: DEAsched
+      - name: BIGitemInstanceId

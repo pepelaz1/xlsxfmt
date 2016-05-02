@@ -115,21 +115,18 @@
     <Content Include="examples\test input1.xlsx">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <None Include="examples\splitRxFormat.yaml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Include="examples\splitRxTestFormat.yaml" />
     <None Include="examples\splitRxTestFormat1.yaml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Include="examples\splitRxTestFormat2.yaml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="examples\testFormat1.yaml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="packages.config" />
-    <Content Include="examples\test input4.xlsx">
+    <Content Include="examples\test input6.xlsx">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="examples\test input5.xlsx">
+    <None Include="packages.config" />
+    <Content Include="examples\test input4.xlsx">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="examples\testFormat.yaml">

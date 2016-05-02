@@ -1,1 +1,1 @@
-xlsxfmt "examples\test input.xlsx" "examples\testFormat.yaml" "examples\overriden output.xlsx"
+xlsxfmt "examples\test input6.xlsx" "examples\splitRxFormat.yaml" "examples\overriden output.xlsx"
