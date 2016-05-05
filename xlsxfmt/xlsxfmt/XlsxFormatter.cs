@@ -31,7 +31,7 @@ namespace xlsxfmt
         private string _outputXlsxBase;
         private string _outputXlsxBaseName;
         private string _outputXlsxBaseExt;
-        private List<String> optionKeys = new List<string>(new string[] { "output-filename-prefix", "output-filename-postfix", "grand-total-prefix", "burst-on-column","max-thread-amount" });
+        private List<String> optionKeys = new List<string>(new string[] { "output-filename-prefix", "output-filename-postfix", "grand-total-prefix", "burst-on-column", "max-thread-amount" });
         private Dictionary<string, string> _options = new Dictionary<string, string>();
         private Dictionary<int, string> _aggregateFunctions = new Dictionary<int, string>();
         private Dictionary<String, int> _moveTotalSheets = new Dictionary<string, int>();
@@ -527,7 +527,8 @@ namespace xlsxfmt
         public void ValidateFormatFile(XLWorkbook wsrc)
         {
             int numErrors = 0;
-            foreach(format.Sheet sheet in _yaml.Sheet){
+            foreach (format.Sheet sheet in _yaml.Sheet)
+            {
                 var shtSource = sheet.Name;
                 if (!string.IsNullOrEmpty(sheet.Source))
                     shtSource = sheet.Source;
@@ -709,7 +710,7 @@ namespace xlsxfmt
                     fileName = _options[@"output-filename-prefix"] + fileName;
                 }
 
-                
+
 
                 if (_options.ContainsKey(@"output-filename-postfix"))
                     fileName = fileName + _options[@"output-filename-postfix"];
@@ -732,21 +733,21 @@ namespace xlsxfmt
             // Construct sheets
             foreach (var shtFmt in _yaml.Sheet)
             {
-                //if (shtFmt.Name.IndexOf("Unpriced") >= 0)
-             //   {
-                var source = shtFmt.Name;
-                if (!string.IsNullOrEmpty(shtFmt.Source))
-                    source = shtFmt.Source;
-                
-                // Find source sheet in source workbook
-                var ssht = wsrc.Worksheets.Where(x => x.Name == source).FirstOrDefault();
-                if (ssht != null)
+                if (shtFmt.Name.IndexOf("Summary") >= 0)
                 {
-                    Console.WriteLine("Thread " + Thread.CurrentThread.ManagedThreadId + " started constructing sheet " + source + " at " + System.DateTime.Now);
-                    ConstructSheet(ssht, wout, shtFmt, needLogoUsage, burstColumnName, burstColumnValue);
-                    Console.WriteLine("Thread " + Thread.CurrentThread.ManagedThreadId + " finished constructing sheet " + source + " at " + System.DateTime.Now);
+                    var source = shtFmt.Name;
+                    if (!string.IsNullOrEmpty(shtFmt.Source))
+                        source = shtFmt.Source;
+
+                    // Find source sheet in source workbook
+                    var ssht = wsrc.Worksheets.Where(x => x.Name == source).FirstOrDefault();
+                    if (ssht != null)
+                    {
+                        Console.WriteLine("Thread " + Thread.CurrentThread.ManagedThreadId + " started constructing sheet " + source + " at " + System.DateTime.Now);
+                        ConstructSheet(ssht, wout, shtFmt, needLogoUsage, burstColumnName, burstColumnValue);
+                        Console.WriteLine("Thread " + Thread.CurrentThread.ManagedThreadId + " finished constructing sheet " + source + " at " + System.DateTime.Now);
+                    }
                 }
-              // }
             }
         }
 
@@ -1240,7 +1241,8 @@ namespace xlsxfmt
             Dictionary<int, xlsxfmt.sorting.FormatOrder> sortColumns = new Dictionary<int, xlsxfmt.sorting.FormatOrder>();
             int numRowsUsed = sourceSheet.RowsUsed().Count();
             // get column numbers to sort
-            if (shtFmt.Sort != null && shtFmt.Sort.Count > 0){
+            if (shtFmt.Sort != null && shtFmt.Sort.Count > 0)
+            {
                 foreach (Sort col in shtFmt.Sort)
                 {
                     xlsxfmt.sorting.FormatOrder fo = new xlsxfmt.sorting.FormatOrder();
@@ -1262,7 +1264,7 @@ namespace xlsxfmt
                     {
                         fo.isString = true;
                     }
-                    sortColumns.Add(GetSourceColumnNumber(sourceSheet, shtFmt, col.Column),fo);
+                    sortColumns.Add(GetSourceColumnNumber(sourceSheet, shtFmt, col.Column), fo);
                 }
             }
             // get needed rows
@@ -1294,7 +1296,7 @@ namespace xlsxfmt
             if (sortColumns.Count > 0)
             {
                 xlsxfmt.sorting.SortRows sortRows = new xlsxfmt.sorting.SortRows(rows.Count);
-                for (int j = 0; j < rows.Count;j++ )
+                for (int j = 0; j < rows.Count; j++)
                 {
                     SortRow sr = new SortRow();
                     sr.index = rows.ElementAt(j);
@@ -1361,12 +1363,12 @@ namespace xlsxfmt
             return rows;
         }
 
-        private int GetSourceColumnNumber(IXLWorksheet sourceSheet,format.Sheet shtFmt, string dstColumnName)
+        private int GetSourceColumnNumber(IXLWorksheet sourceSheet, format.Sheet shtFmt, string dstColumnName)
         {
             format.Column c = shtFmt.Column.Where(x => x.Name == dstColumnName).FirstOrDefault();
             if (c == null)
                 return -1;
-            string sourceColumnName=c.Name;
+            string sourceColumnName = c.Name;
             if (!String.IsNullOrEmpty(c.Source))
                 sourceColumnName = c.Source;
             var col = sourceSheet.Columns().Where(x => x.Cells().Count() > 0 && x.Cell(1).Value.ToString() == sourceColumnName).FirstOrDefault();
@@ -1531,18 +1533,27 @@ namespace xlsxfmt
             #endregion
             #region popalating with source data
             //for(int j=0; j<shtFmt.Column.Count; j++)
+            List<IXLColumn> srcCols = new List<IXLColumn>();
+            List<format.Column> formatCols = new List<format.Column>();
             foreach (format.Column colFmt in shtFmt.Column)
             {
                 var source = colFmt.Name;
+                if (source == "PrimeVendorCode")
+                {
+                    int y = 0;
+                }
                 if (!string.IsNullOrEmpty(colFmt.Source))
                     source = colFmt.Source;
+                //if (source == "")
                 // Find corresponding column in source sheet
                 var cols = ssht.Columns();
-                var srcColumn = cols.Where(x => x.Cells().Count() >0 &&  x.Cell(1).Value.ToString() == source).FirstOrDefault();
+                var srcColumn = cols.Where(x => x.Cells().Count() > 0 && x.Cell(1).Value.ToString() == source).FirstOrDefault();
                 // try
                 // {
                 if (srcColumn != null)
                 {
+                    srcCols.Add(srcColumn);
+                    formatCols.Add(colFmt);
                     // Set output column name
                     wsht.Cell(rowNum, colNum).Value = colFmt.Name;
                     #region setheaderstyle
@@ -1580,85 +1591,84 @@ namespace xlsxfmt
                     }
                     #endregion
                     // Populate output column cells
-                    var cellCollection = srcColumn.Cells();
-                    var cellCnt = cellCollection.Count();
-                    //Console.WriteLine("column" + srcColumn.Cell(1).Value.ToString() + " numCells = " + cellCnt + ", rowsNeeded = " + rowsSortedNeeded.Count);
-                   // for (int i = 2; i <= cellCnt; i++)
-                    foreach (var cell in cellCollection)
-                    {
-                        int rn = cell.WorksheetRow().RowNumber();
-                        if (rowsSortedNeeded.Contains(rn))
-                        {
-                            if (String.IsNullOrEmpty(burstColumnName) ||
-                                    (burstColNumber != 0 &&
-                                     ssht.Cell(rn, burstColNumber).Value.Equals(burstColumnValue)
-                                    )
-                                )
-                            {
-                                rowNum++;
-                                //wsht.Cell(rowNum, colNum).Value = srcColumn.Cell(i).Value;
-                                wsht.Cell(rowNum, colNum).Value = cell.Value;
-                                #region setdatacellstyle
-                                xlsxfmt.format.Font cellFont;
-                                if (colFmt.Font != null && colFmt.Font.Data != null)
-                                    cellFont = colFmt.Font;
-                                else
-                                    cellFont = shtFmt.Font;
-                                if (cellFont != null && cellFont.Data != null)
-                                {
-                                    //size
-                                    if (!String.IsNullOrEmpty(cellFont.Data.Size))
-                                    {
-                                        double fontSz;
-                                        Double.TryParse(cellFont.Data.Size, out fontSz);
-                                        wsht.Cell(rowNum, colNum).Style.Font.SetFontSize(fontSz);
-                                    }
-                                    //style
-                                    String dataStyle = "";
-                                    if (!string.IsNullOrEmpty(cellFont.Data.Style))
-                                    {
-                                        dataStyle = cellFont.Data.Style;
-                                    }
-                                    else
-                                    {
-                                        if (_yaml.Defaults.Font.Data != null && _yaml.Defaults.Font.Data.Style != null)
-                                            dataStyle = _yaml.Defaults.Font.Data.Style;
-                                    }
-                                    if (!String.IsNullOrEmpty(dataStyle))
-                                    {
-                                        if (dataStyle == "bold")
-                                        {
-                                            wsht.Cell(rowNum, colNum).Style.Font.SetBold();
-                                        }
-                                        else if (dataStyle == "italic")
-                                        {
-                                            wsht.Cell(rowNum, colNum).Style.Font.SetItalic();
-                                        }
-                                        else if (dataStyle == "underline")
-                                        {
-                                            wsht.Cell(rowNum, colNum).Style.Font.SetUnderline();
-                                        }
-                                    }
-                                    //conditional-formatting
-
-                                }
-                                #endregion
-                            }
-                        }
-                    }
+                    if (colFmt.hidden == "true")
+                        wsht.Column(colNum).Hide();
                 }
-                //   }
-                //  catch (Exception ex)
-                //    {
-
-                //   }
-                if (rowNum - logoRows - headerRows > numDataRows)
-                    numDataRows = rowNum - logoRows - headerRows;
-                Interlocked.Increment(ref colNum);
-                rowNum = startRowNum;
                 if (colFmt.hidden == "true")
                     wsht.Column(colNum).Hide();
+                colNum++;
             }
+            colNum = 1;
+            rowNum++;
+            Console.WriteLine("Thread " + Thread.CurrentThread.ManagedThreadId + " started populating with needed data sheet " + shtFmt.Name + " at " + System.DateTime.Now);
+            foreach (var row in rowsSortedNeeded)
+            {
+                for(int i =0;i<srcCols.Count;i++)
+                {
+                    if ((String.IsNullOrEmpty(burstColumnName) ||
+                                (burstColNumber != 0 &&
+                                    ssht.Cell(row, burstColNumber).Value.Equals(burstColumnValue)
+                                )
+                            ) //&& (srcCols[i].Cells().Any(x => x.WorksheetRow().RowNumber() == row))
+                         && (srcCols[i].Cell(row).Value != null)
+                        )
+                    {
+                       // rowNum++;
+                        //wsht.Cell(rowNum, colNum).Value = srcColumn.Cell(i).Value;
+                        wsht.Cell(rowNum, colNum).Value = srcCols[i].Cell(row).Value;
+                        #region setdatacellstyle
+                        xlsxfmt.format.Font cellFont;
+                        if (formatCols[i].Font != null && formatCols[i].Font.Data != null)
+                            cellFont = formatCols[i].Font;
+                        else
+                            cellFont = shtFmt.Font;
+                        if (cellFont != null && cellFont.Data != null)
+                        {
+                            //size
+                            if (!String.IsNullOrEmpty(cellFont.Data.Size))
+                            {
+                                double fontSz;
+                                Double.TryParse(cellFont.Data.Size, out fontSz);
+                                wsht.Cell(rowNum, colNum).Style.Font.SetFontSize(fontSz);
+                            }
+                            //style
+                            String dataStyle = "";
+                            if (!string.IsNullOrEmpty(cellFont.Data.Style))
+                            {
+                                dataStyle = cellFont.Data.Style;
+                            }
+                            else
+                            {
+                                if (_yaml.Defaults.Font.Data != null && _yaml.Defaults.Font.Data.Style != null)
+                                    dataStyle = _yaml.Defaults.Font.Data.Style;
+                            }
+                            if (!String.IsNullOrEmpty(dataStyle))
+                            {
+                                if (dataStyle == "bold")
+                                {
+                                    wsht.Cell(rowNum, colNum).Style.Font.SetBold();
+                                }
+                                else if (dataStyle == "italic")
+                                {
+                                    wsht.Cell(rowNum, colNum).Style.Font.SetItalic();
+                                }
+                                else if (dataStyle == "underline")
+                                {
+                                    wsht.Cell(rowNum, colNum).Style.Font.SetUnderline();
+                                }
+                            }
+                            //conditional-formatting
+
+                        }
+                        #endregion
+                    }
+                    Interlocked.Increment(ref colNum);
+                }
+                rowNum++;
+                colNum = 1;
+            }
+            Console.WriteLine("Thread " + Thread.CurrentThread.ManagedThreadId + " finished populating with needed data sheet " + shtFmt.Name + " at " + System.DateTime.Now);
+            numDataRows = rowNum - headerRows - logoRows - 1;
             #endregion
             colNum = 1;
             foreach (xlsxfmt.format.Column colFmt in shtFmt.Column)
@@ -1667,7 +1677,7 @@ namespace xlsxfmt
                 var source = colFmt.Name;
                 if (!string.IsNullOrEmpty(colFmt.Source))
                     source = colFmt.Source;
-                var srcColumn = ssht.Columns().Where(x => x.Cells().Count()>0 && x.Cell(1).Value.ToString() == source).FirstOrDefault();
+                var srcColumn = ssht.Columns().Where(x => x.Cells().Count() > 0 && x.Cell(1).Value.ToString() == source).FirstOrDefault();
                 if (srcColumn != null)
                 {
                     if (string.IsNullOrEmpty(colFmt.FormatType))
@@ -1755,9 +1765,11 @@ namespace xlsxfmt
             IXLRow curRow, prevRow;
             int groupLevel = lc.Count;
             int lastColUsed = wsht.LastColumnUsed().ColumnNumber();
-            lastRowUsed += numDataRows;
+            //lastRowUsed += numDataRows;
+            lastRowUsed = wsht.LastRowUsed().RowNumber();
             int sortColNumber = lastColUsed + 1;
             //var tableRange = wsht.Range(wsht.FirstCellUsed().CellBelow(), wsht.LastColumnUsed().LastCellUsed());
+            var lru = wsht.LastRowUsed();
             var tableRange = wsht.Range(wsht.FirstCellUsed().CellBelow(), wsht.Row(lastRowUsed).LastCellUsed());
             if (groupLevel > 0 && numDataRows > 0)
             {
@@ -1817,7 +1829,7 @@ namespace xlsxfmt
                 Console.WriteLine("Thread " + Thread.CurrentThread.ManagedThreadId + " finished preparing for grouping in sheet " + shtFmt.Name + " at " + System.DateTime.Now);
 
             }
-            
+
             if (shtFmt.Sort != null && shtFmt.Sort.Count > 0 && numDataRows > 0)
             {
                 Console.WriteLine("Thread " + Thread.CurrentThread.ManagedThreadId + " started sorting sheet " + shtFmt.Name + " at " + System.DateTime.Now);

@@ -10,8 +10,8 @@ namespace xlsxfmt.Test
         public void TestMethod1()
         {
             var xf = new XlsxFormatter( new string[] {
-                @"examples\test input5.xlsx",
-                @"examples\splitRxTestFormat2.yaml",
+                @"examples\test input6.xlsx",
+                @"examples\splitRxFormat.yaml",
                 @"--output-filename-prefix=_outpref_",
                 @"--output-filename-postfix=_outpost_",
                 @"--grand-total-prefix=""General Medical System""",
