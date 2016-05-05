@@ -1190,13 +1190,16 @@ namespace xlsxfmt
                     == col.Name).FirstOrDefault();
                 if (srcColumn != null)
                 {
-                    var cellCnt = srcColumn.Cells().Count();
-                    for (int i = 2; i <= cellCnt; i++)
+                    var cellCollection = srcColumn.Cells();
+                    var cellCnt = cellCollection.Count();
+                    foreach (var cell in cellCollection)
                     {
-                        String v = srcColumn.Cell(i).Value.ToString();
-                        if (col.stopValues.Any(x => x.stopValue == v) && !excludedRows.Contains(i))
+                        int rn = cell.WorksheetRow().RowNumber();
+                        if (rn == 1) continue;
+                        String v = cell.Value.ToString();
+                        if (col.stopValues.Any(x => x.stopValue == v) && !excludedRows.Contains(rn))
                         {
-                            excludedRows.Add(i);
+                            excludedRows.Add(rn);
                         }
                     }
                 }
@@ -1212,13 +1215,18 @@ namespace xlsxfmt
                     == col.Name).FirstOrDefault();
                 if (srcColumn != null)
                 {
-                    var cellCnt = srcColumn.Cells().Count();
-                    for (int i = 2; i <= cellCnt; i++)
+                    //var cellCnt = srcColumn.Cells().Count();
+                    //for (int i = 2; i <= cellCnt; i++)
+                    var cellCollection = srcColumn.Cells();
+                    var cellCnt = cellCollection.Count();
+                    foreach (var cell in cellCollection)
                     {
-                        String v = srcColumn.Cell(i).Value.ToString();
-                        if (col.requiredValues.Any(x => x.requiredValue == v) && !includedRows.Contains(i))
+                        int rn = cell.WorksheetRow().RowNumber();
+                        if (rn == 1) continue;
+                        String v = cell.Value.ToString();
+                        if (col.requiredValues.Any(x => x.requiredValue == v) && !includedRows.Contains(rn))
                         {
-                            includedRows.Add(i);
+                            includedRows.Add(rn);
                         }
                     }
                 }
@@ -1572,22 +1580,24 @@ namespace xlsxfmt
                     }
                     #endregion
                     // Populate output column cells
-                    var cellCnt = srcColumn.Cells().Count();
+                    var cellCollection = srcColumn.Cells();
+                    var cellCnt = cellCollection.Count();
                     //Console.WriteLine("column" + srcColumn.Cell(1).Value.ToString() + " numCells = " + cellCnt + ", rowsNeeded = " + rowsSortedNeeded.Count);
-                    for (int i = 2; i <= cellCnt; i++)
-                   // foreach(int rowNumber in rowsSortedNeeded)
+                   // for (int i = 2; i <= cellCnt; i++)
+                    foreach (var cell in cellCollection)
                     {
-                        if (rowsSortedNeeded.Contains(i))
+                        int rn = cell.WorksheetRow().RowNumber();
+                        if (rowsSortedNeeded.Contains(rn))
                         {
                             if (String.IsNullOrEmpty(burstColumnName) ||
                                     (burstColNumber != 0 &&
-                                     ssht.Cell(i, burstColNumber).Value.Equals(burstColumnValue)
+                                     ssht.Cell(rn, burstColNumber).Value.Equals(burstColumnValue)
                                     )
                                 )
                             {
                                 rowNum++;
                                 //wsht.Cell(rowNum, colNum).Value = srcColumn.Cell(i).Value;
-                                wsht.Cell(rowNum, colNum).Value = srcColumn.Cell(i).Value;
+                                wsht.Cell(rowNum, colNum).Value = cell.Value;
                                 #region setdatacellstyle
                                 xlsxfmt.format.Font cellFont;
                                 if (colFmt.Font != null && colFmt.Font.Data != null)
