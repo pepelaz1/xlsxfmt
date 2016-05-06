@@ -733,8 +733,8 @@ namespace xlsxfmt
             // Construct sheets
             foreach (var shtFmt in _yaml.Sheet)
             {
-                if (shtFmt.Name.IndexOf("Summary") >= 0)
-                {
+              //  if (shtFmt.Name.IndexOf("Summary") >= 0)
+             //   {
                     var source = shtFmt.Name;
                     if (!string.IsNullOrEmpty(shtFmt.Source))
                         source = shtFmt.Source;
@@ -747,7 +747,7 @@ namespace xlsxfmt
                         ConstructSheet(ssht, wout, shtFmt, needLogoUsage, burstColumnName, burstColumnValue);
                         Console.WriteLine("Thread " + Thread.CurrentThread.ManagedThreadId + " finished constructing sheet " + source + " at " + System.DateTime.Now);
                     }
-                }
+              //  }
             }
         }
 
