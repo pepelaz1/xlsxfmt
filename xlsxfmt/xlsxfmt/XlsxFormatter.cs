@@ -497,21 +497,21 @@ namespace xlsxfmt
             // try
             //{
             // Construct output workbook using source workbook and input params
-            Console.WriteLine("Thread " + Thread.CurrentThread.ManagedThreadId + " started processing at " + System.DateTime.Now);
+            Console.WriteLine("Thread id:" + Thread.CurrentThread.ManagedThreadId + " started processing at " + System.DateTime.Now);
 
             Construct(sourceWorkbook, outputWorkbook, needLogoUsage, burstColumnName, burstColumnValue);
 
-            Console.WriteLine("Thread " + Thread.CurrentThread.ManagedThreadId + " finished processing at " + System.DateTime.Now);
+            Console.WriteLine("Thread id:" + Thread.CurrentThread.ManagedThreadId + " finished processing at " + System.DateTime.Now);
 
             // Save output file
             if (outputWorkbook.Worksheets.Count > 0)
             {
-                Console.WriteLine("Thread " + Thread.CurrentThread.ManagedThreadId + " Step 8/9 started saving file at " + outputFileName + " at " + System.DateTime.Now);
+                Console.WriteLine("Thread id:" + Thread.CurrentThread.ManagedThreadId + " started saving file at " + outputFileName + " at " + System.DateTime.Now);
                 outputWorkbook.SaveAs(outputFileName);
-                Console.WriteLine("Thread " + Thread.CurrentThread.ManagedThreadId + " Step 8/9 finished saving file at " + outputFileName + " at " + System.DateTime.Now);
-                Console.WriteLine("Thread " + Thread.CurrentThread.ManagedThreadId + " Step 9/9 started processing image insert and column moving at " + System.DateTime.Now);
+                Console.WriteLine("Thread id:" + Thread.CurrentThread.ManagedThreadId + " finished saving file at " + outputFileName + " at " + System.DateTime.Now);
+                Console.WriteLine("Thread id:" + Thread.CurrentThread.ManagedThreadId + " started processing image insert and column moving at " + System.DateTime.Now);
                 AddImageAndPaneMove(outputFileName, needLogoUsage, needMoveTotalColumn);
-                Console.WriteLine("Thread " + Thread.CurrentThread.ManagedThreadId + " Step 9/9 finished processing image insert and column moving at " + System.DateTime.Now);
+                Console.WriteLine("Thread id:" + Thread.CurrentThread.ManagedThreadId + " finished processing image insert and column moving at " + System.DateTime.Now);
             }
             else
             {
@@ -743,9 +743,9 @@ namespace xlsxfmt
                     var ssht = wsrc.Worksheets.Where(x => x.Name == source).FirstOrDefault();
                     if (ssht != null)
                     {
-                        Console.WriteLine("Thread " + Thread.CurrentThread.ManagedThreadId + " Step 7/9 started constructing sheet " + source + " at " + System.DateTime.Now);
+                        Console.WriteLine("Thread id:" + Thread.CurrentThread.ManagedThreadId.ToString() + " started constructing sheet " + source + " at " + System.DateTime.Now);
                         ConstructSheet(ssht, wout, shtFmt, needLogoUsage, burstColumnName, burstColumnValue);
-                        Console.WriteLine("Thread " + Thread.CurrentThread.ManagedThreadId + " Step 7/9 finished constructing sheet " + source + " at " + System.DateTime.Now);
+                        Console.WriteLine("Thread id:" + Thread.CurrentThread.ManagedThreadId.ToString() + " finished constructing sheet " + source + " at " + System.DateTime.Now);
                     }
                 }
             }
@@ -1432,9 +1432,9 @@ namespace xlsxfmt
                     burstColNumber = c.ColumnNumber();
                 }
             }
-            Console.WriteLine("Thread " + Thread.CurrentThread.ManagedThreadId + " Step 1/9 started getting needed rows in sheet " + shtFmt.Name + " at " + System.DateTime.Now);
+            Console.WriteLine("Thread id:" + Thread.CurrentThread.ManagedThreadId.ToString() + " started getting needed rows in sheet " + shtFmt.Name + " at " + System.DateTime.Now);
             List<int> rowsSortedNeeded = GetNeededRows(ssht, shtFmt, rowsExcluded, rowsIncluded, burstColNumber, burstColumnValue);
-            Console.WriteLine("Thread " + Thread.CurrentThread.ManagedThreadId + " Step 1/9 finished getting needed rows in sheet " + shtFmt.Name + " at " + System.DateTime.Now);
+            Console.WriteLine("Thread id:" + Thread.CurrentThread.ManagedThreadId.ToString() + " finished getting needed rows in sheet " + shtFmt.Name + " at " + System.DateTime.Now);
             if (needLogoUsage && !String.IsNullOrEmpty(shtFmt.IncludeLogo) && shtFmt.IncludeLogo.Equals("true"))
             {
                 // Graphics g = Graphics.FromImage(_logo);
@@ -1600,7 +1600,7 @@ namespace xlsxfmt
             }
             colNum = 1;
             rowNum++;
-            Console.WriteLine("Thread " + Thread.CurrentThread.ManagedThreadId + " Step 2/9 started populating with needed data sheet " + shtFmt.Name + " at " + System.DateTime.Now);
+            Console.WriteLine("Thread id:" + Thread.CurrentThread.ManagedThreadId.ToString() + " started populating with needed data sheet " + shtFmt.Name + " at " + System.DateTime.Now);
             foreach (var row in rowsSortedNeeded)
             {
                 for(int i =0;i<srcCols.Count;i++)
@@ -1667,7 +1667,7 @@ namespace xlsxfmt
                 rowNum++;
                 colNum = 1;
             }
-            Console.WriteLine("Thread " + Thread.CurrentThread.ManagedThreadId + " Step 2/9 finished populating with needed data sheet " + shtFmt.Name + " at " + System.DateTime.Now);
+            Console.WriteLine("Thread id:" + Thread.CurrentThread.ManagedThreadId.ToString() + " finished populating with needed data sheet " + shtFmt.Name + " at " + System.DateTime.Now);
             numDataRows = rowNum - headerRows - logoRows - 1;
             #endregion
             colNum = 1;
@@ -1773,7 +1773,7 @@ namespace xlsxfmt
             var tableRange = wsht.Range(wsht.FirstCellUsed().CellBelow(), wsht.Row(lastRowUsed).LastCellUsed());
             if (groupLevel > 0 && numDataRows > 0)
             {
-                Console.WriteLine("Thread " + Thread.CurrentThread.ManagedThreadId + " Step 3/9 started preparing for grouping in sheet " + shtFmt.Name + " at " + System.DateTime.Now);
+                Console.WriteLine("Thread id:" + Thread.CurrentThread.ManagedThreadId.ToString() + " started preparing for grouping in sheet " + shtFmt.Name + " at " + System.DateTime.Now);
                 int rowCnt = tableRange.RowCount();
                 List<SortKeyLevel> totalKeys = new List<SortKeyLevel>();
                 List<int> totalLevels = new List<int>();
@@ -1826,13 +1826,13 @@ namespace xlsxfmt
                         shtFmt.Sort.Add(sr);
                     }
                 }*/
-                Console.WriteLine("Thread " + Thread.CurrentThread.ManagedThreadId + " Step 3/9 finished preparing for grouping in sheet " + shtFmt.Name + " at " + System.DateTime.Now);
+                Console.WriteLine("Thread id:" + Thread.CurrentThread.ManagedThreadId.ToString() + " finished preparing for grouping in sheet " + shtFmt.Name + " at " + System.DateTime.Now);
 
             }
 
             if (shtFmt.Sort != null && shtFmt.Sort.Count > 0 && numDataRows > 0)
             {
-                Console.WriteLine("Thread " + Thread.CurrentThread.ManagedThreadId + " Step 4/9 started sorting sheet " + shtFmt.Name + " at " + System.DateTime.Now);
+                Console.WriteLine("Thread id:" + Thread.CurrentThread.ManagedThreadId.ToString() + " started sorting sheet " + shtFmt.Name + " at " + System.DateTime.Now);
                 //Sorting
                 var fcu = wsht.FirstCellUsed();
                 var lcu = wsht.LastCellUsed();
@@ -1845,7 +1845,7 @@ namespace xlsxfmt
                         tableRange.SortColumns.Add(sortColNumber);
                 }
                 tableSortRange.Sort();
-                Console.WriteLine("Thread " + Thread.CurrentThread.ManagedThreadId + " Step 4/9 finished sorting sheet " + shtFmt.Name + " at " + System.DateTime.Now);
+                Console.WriteLine("Thread id:" + Thread.CurrentThread.ManagedThreadId.ToString() + " finished sorting sheet " + shtFmt.Name + " at " + System.DateTime.Now);
             }
 
             GC.Collect();
@@ -1858,7 +1858,7 @@ namespace xlsxfmt
             //if (1==2)
             {
                 //IXLWorksheet wshtTemp = wout.AddWorksheet("Temp");
-                Console.WriteLine("Thread " + Thread.CurrentThread.ManagedThreadId + " Step 5/9 started generating totals in sheet " + shtFmt.Name + " at " + System.DateTime.Now);
+                Console.WriteLine("Thread id:" + Thread.CurrentThread.ManagedThreadId.ToString() + " started generating totals in sheet " + shtFmt.Name + " at " + System.DateTime.Now);
                 Dictionary<int, List<RowsRange>> groupRanges = new Dictionary<int, List<RowsRange>>();
                 var dict = new Dictionary<String, double>();
 
@@ -2017,7 +2017,7 @@ namespace xlsxfmt
                 wsht.Column(sortColNumber).Clear();
                 //wshtTemp.Delete();
                 elements = null;
-                Console.WriteLine("Thread " + Thread.CurrentThread.ManagedThreadId + " Step 5/9 finished generating totals in sheet " + shtFmt.Name + " at " + System.DateTime.Now);
+                Console.WriteLine("Thread id:" + Thread.CurrentThread.ManagedThreadId.ToString() + " finished generating totals in sheet " + shtFmt.Name + " at " + System.DateTime.Now);
             }
             #endregion
             /*
@@ -2058,9 +2058,9 @@ namespace xlsxfmt
             }
             #endregion
             // Adjust columns width
-            Console.WriteLine("Thread " + Thread.CurrentThread.ManagedThreadId + " Step 6/9 started adjusting columns to content in sheet " + shtFmt.Name + " at " + System.DateTime.Now);
+            Console.WriteLine("Thread id:" + Thread.CurrentThread.ManagedThreadId.ToString() + " started adjusting columns to content in sheet " + shtFmt.Name + " at " + System.DateTime.Now);
             wsht.Columns().AdjustToContents();
-            Console.WriteLine("Thread " + Thread.CurrentThread.ManagedThreadId + " Step 6/9 finished adjusting columns to content in sheet " + shtFmt.Name + " at " + System.DateTime.Now);
+            Console.WriteLine("Thread id:" + Thread.CurrentThread.ManagedThreadId.ToString() + " finished adjusting columns to content in sheet " + shtFmt.Name + " at " + System.DateTime.Now);
             colNum = 1;
             foreach (xlsxfmt.format.Column colFmt in shtFmt.Column)
             {
