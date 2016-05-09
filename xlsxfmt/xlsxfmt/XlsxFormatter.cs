@@ -733,8 +733,8 @@ namespace xlsxfmt
             // Construct sheets
             foreach (var shtFmt in _yaml.Sheet)
             {
-                if (shtFmt.Name.IndexOf("Summary") >= 0)
-                {
+                //if (shtFmt.Name.IndexOf("Location") >= 0 || shtFmt.Name.IndexOf("Unpriced") >= 0)
+               // {
                     var source = shtFmt.Name;
                     if (!string.IsNullOrEmpty(shtFmt.Source))
                         source = shtFmt.Source;
@@ -747,7 +747,7 @@ namespace xlsxfmt
                         ConstructSheet(ssht, wout, shtFmt, needLogoUsage, burstColumnName, burstColumnValue);
                         Console.WriteLine("Thread id:" + Thread.CurrentThread.ManagedThreadId.ToString() + " finished constructing sheet " + source + " at " + System.DateTime.Now);
                     }
-                }
+                //}
             }
         }
 
@@ -1391,7 +1391,7 @@ namespace xlsxfmt
                     if (_yaml.Format.emptySheet.DefaultText != null)
                     {
                         wsht = wout.AddWorksheet(shtFmt.Name);
-                        wsht.Cell(1, 2).Value = _yaml.Format.emptySheet.DefaultText;
+                        wsht.Cell(2, 1).Value = _yaml.Format.emptySheet.DefaultText;
                         return;
                     }
                 }
@@ -1538,10 +1538,6 @@ namespace xlsxfmt
             foreach (format.Column colFmt in shtFmt.Column)
             {
                 var source = colFmt.Name;
-                if (source == "PrimeVendorCode")
-                {
-                    int y = 0;
-                }
                 if (!string.IsNullOrEmpty(colFmt.Source))
                     source = colFmt.Source;
                 //if (source == "")
@@ -1601,6 +1597,7 @@ namespace xlsxfmt
             colNum = 1;
             rowNum++;
             Console.WriteLine("Thread id:" + Thread.CurrentThread.ManagedThreadId.ToString() + " started populating with needed data sheet " + shtFmt.Name + " at " + System.DateTime.Now);
+            bool wroteFlag = false;
             foreach (var row in rowsSortedNeeded)
             {
                 for(int i =0;i<srcCols.Count;i++)
@@ -1616,6 +1613,7 @@ namespace xlsxfmt
                        // rowNum++;
                         //wsht.Cell(rowNum, colNum).Value = srcColumn.Cell(i).Value;
                         wsht.Cell(rowNum, colNum).Value = srcCols[i].Cell(row).Value;
+                        wroteFlag = true; // if were writing to cell
                         #region setdatacellstyle
                         xlsxfmt.format.Font cellFont;
                         if (formatCols[i].Font != null && formatCols[i].Font.Data != null)
@@ -1664,8 +1662,10 @@ namespace xlsxfmt
                     }
                     Interlocked.Increment(ref colNum);
                 }
-                rowNum++;
+                if (wroteFlag)
+                    rowNum++;
                 colNum = 1;
+                wroteFlag = false;
             }
             Console.WriteLine("Thread id:" + Thread.CurrentThread.ManagedThreadId.ToString() + " finished populating with needed data sheet " + shtFmt.Name + " at " + System.DateTime.Now);
             numDataRows = rowNum - headerRows - logoRows - 1;
@@ -2048,7 +2048,7 @@ namespace xlsxfmt
                 {
                     if (_yaml.Format.emptySheet.DefaultText != null)
                     {
-                        wsht.Cell(2, 2).Value = _yaml.Format.emptySheet.DefaultText;
+                        wsht.Cell(2, 1).Value = _yaml.Format.emptySheet.DefaultText;
                     }
                     if (_yaml.Format.emptySheet.exclude == "true")
                     {
