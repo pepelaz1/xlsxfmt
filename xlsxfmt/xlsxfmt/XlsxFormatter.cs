@@ -733,8 +733,8 @@ namespace xlsxfmt
             // Construct sheets
             foreach (var shtFmt in _yaml.Sheet)
             {
-                //if (shtFmt.Name.IndexOf("Location") >= 0 || shtFmt.Name.IndexOf("Unpriced") >= 0)
-               // {
+                //if (shtFmt.Name.IndexOf("Unpriced") >= 0)
+                //{
                     var source = shtFmt.Name;
                     if (!string.IsNullOrEmpty(shtFmt.Source))
                         source = shtFmt.Source;
@@ -1207,11 +1207,13 @@ namespace xlsxfmt
             }
             return excludedRows;
         }
-        private List<int> GetIncludedRows(IXLWorksheet sourceSheet, xlsxfmt.format.Sheet shtFmt)
+        private List<int> GetIncludedRows(IXLWorksheet sourceSheet, xlsxfmt.format.Sheet shtFmt, out bool filteredByRequiredValues)
         {
             List<int> includedRows = new List<int>();
+            filteredByRequiredValues = false;
             foreach (var col in shtFmt.Column.Where(x => x.requiredValues != null && x.requiredValues.Count != 0))
             {
+                filteredByRequiredValues = true;
                 var srcColumn = sourceSheet.Columns().Where(x => x.Cell(1).Value.ToString()
                     == col.Name).FirstOrDefault();
                 if (srcColumn != null)
@@ -1235,7 +1237,7 @@ namespace xlsxfmt
             return includedRows;
         }
 
-        private List<int> GetNeededRows(IXLWorksheet sourceSheet, format.Sheet shtFmt, List<int> rowsExcluded, List<int> rowsIncluded, int burstColNumber, String burstColumnValue)
+        private List<int> GetNeededRows(IXLWorksheet sourceSheet, format.Sheet shtFmt, List<int> rowsExcluded, List<int> rowsIncluded,bool includedFiltered, int burstColNumber, String burstColumnValue)
         {
             List<int> rows = new List<int>();
             Dictionary<int, xlsxfmt.sorting.FormatOrder> sortColumns = new Dictionary<int, xlsxfmt.sorting.FormatOrder>();
@@ -1287,7 +1289,7 @@ namespace xlsxfmt
             }*/
             for (int i = 2; i <= numRowsUsed; i++)
             {
-                if (!rowsExcluded.Contains(i) && (rowsIncluded.Count() == 0 || rowsIncluded.Contains(i)))
+                if (!rowsExcluded.Contains(i) && (!includedFiltered || rowsIncluded.Contains(i)))
                 {
                     rows.Add(i);
                 }
@@ -1407,8 +1409,9 @@ namespace xlsxfmt
             bool logoInserted = false;
             List<xlsxfmt.format.Column> lc = GetSubtotalCols(shtFmt);
             Dictionary<int, int> colFuncs = GetColFuncs(shtFmt);
+            bool includedFiltered = false;
             List<int> rowsExcluded = GetExcludedRows(ssht, shtFmt);
-            List<int> rowsIncluded = GetIncludedRows(ssht, shtFmt);
+            List<int> rowsIncluded = GetIncludedRows(ssht, shtFmt, out includedFiltered);
             // Adding group columns into sort column list
             foreach (var item in lc)
             {
@@ -1433,7 +1436,7 @@ namespace xlsxfmt
                 }
             }
             Console.WriteLine("Thread id:" + Thread.CurrentThread.ManagedThreadId.ToString() + " started getting needed rows in sheet " + shtFmt.Name + " at " + System.DateTime.Now);
-            List<int> rowsSortedNeeded = GetNeededRows(ssht, shtFmt, rowsExcluded, rowsIncluded, burstColNumber, burstColumnValue);
+            List<int> rowsSortedNeeded = GetNeededRows(ssht, shtFmt, rowsExcluded, rowsIncluded, includedFiltered, burstColNumber, burstColumnValue);
             Console.WriteLine("Thread id:" + Thread.CurrentThread.ManagedThreadId.ToString() + " finished getting needed rows in sheet " + shtFmt.Name + " at " + System.DateTime.Now);
             if (needLogoUsage && !String.IsNullOrEmpty(shtFmt.IncludeLogo) && shtFmt.IncludeLogo.Equals("true"))
             {
